@@ -1,0 +1,413 @@
+import '../settings/settings_service.dart';
+
+String tr(String key) {
+  if (SettingsService.instance.isEnglish) {
+    return _en[key] ?? _id[key] ?? key;
+  }
+  return _id[key] ?? key;
+}
+
+const Map<String, String> _id = {
+  // Navigation
+  'nav_home': 'Home',
+  'nav_history': 'History',
+  'nav_summary': 'Summary',
+  'nav_settings': 'Settings',
+
+  // Dashboard
+  'dash_greeting_morning': 'Selamat Pagi',
+  'dash_greeting_afternoon': 'Selamat Siang',
+  'dash_greeting_evening': 'Selamat Malam',
+  'dash_greeting_name': 'Marko',
+  'dash_total': 'Total',
+  'dash_status': 'Proporsional',
+  'dash_noresult_desc': 'Coba gunakan kata kunci lain atau cek ejaannya.',
+  'dash_search_hint': 'Cari struk atau anggota...',
+  'dash_chart_6mo': 'Total pengeluaran 6 bulan terakhir (dalam Ribu Rp)',
+  'dash_new_receipts': 'Struk Baru',
+  'dash_not_settled': 'Belum Lunas',
+  'dash_proporsional': 'Proporsional',
+  'dash_items': 'Items',
+  'dash_counted': 'Terhitung',
+  'dash_menunggu': 'Menunggu',
+  'dash_psn': 'Psn',
+  'dash_pndg': 'Pndg',
+  'dash_category_chart': 'Kategori Pengeluaran (Real-Time)',
+  'dash_trend_chart': 'Tren Split Bill (Real-Time)',
+  'dash_empty_all': 'Belum Ada Struk Belanja',
+  'dash_not_found': 'Tidak Ditemukan',
+  'dash_lihat_edit': 'Lihat & Edit Rincian Split',
+  'dash_group': 'Group',
+  'dash_split_active': 'Split Aktif',
+  'dash_buat_baru': 'Buat Baru',
+  'dash_buat_baru_plus': '+ Buat Baru',
+  'dash_buat_struk_baru': 'Buat Struk Baru',
+  'dash_empty_desc2':
+      'Tap tombol + Struk Baru untuk mengunggah struk dan mulai membagi tagihan dengan temanmu.',
+  'dash_member_transfer': '{paid}/{total} Anggota Transfer',
+  'dash_bulan_ini': 'Bulan Ini',
+
+  // Riwayat
+  'his_title': 'Riwayat Split Bill',
+  'his_tab_all': 'Semua',
+  'his_tab_lunas': 'Lunas',
+  'his_tab_pending': 'Pending',
+  'his_search_hint': 'Cari riwayat transaksi...',
+  'his_empty': 'Belum ada riwayat transaksi',
+  'his_empty_search': 'Tidak ditemukan hasil pencarian',
+  'his_lunas': 'Lunas',
+  'his_menunggu': 'Menunggu',
+
+  // Ringkasan
+  'ring_pembayaran': 'Ringkasan Pembayaran',
+  'ring_total_tagihan': 'Total Tagihan',
+  'ring_lunas_status': 'LUNAS',
+  'ring_belum_bayar': 'BELUM BAYAR',
+  'ring_belum_bayar2': 'Belum Bayar',
+  'ring_status_changed': 'Status {name} diubah menjadi {status}',
+  'ring_deleted': 'Struk "{title}" berhasil dihapus!',
+  'ring_share_wa': 'Membuka WhatsApp untuk membagikan rincian...',
+  'ring_share_failed': 'Gagal membuka aplikasi berbagi.',
+  'ring_pdf': 'Mengunduh file PDF Struk...',
+  'ring_lunas': 'Lunas',
+  'ring_incl_tax': 'Termasuk Pajak & Layanan ({pct}%)',
+  'ring_subtotal': 'Subtotal',
+  'ring_pajak_layanan': 'Pajak & Layanan ({pct}%)',
+  'ring_total_anda': 'Total Anda',
+  'ring_bagikan': 'Bagikan ke WhatsApp',
+  'ring_simpan_pdf': 'Simpan ke PDF',
+
+  // Delete confirmation
+  'del_confirm_title': 'Hapus Struk?',
+  'del_confirm_desc': 'Struk "{title}" akan dihapus permanen.',
+  'del_cancel': 'Batal',
+  'del_hapus': 'Hapus',
+
+  // Bill Editor
+  'edit_title': 'Edit Struk & Pesanan',
+  'edit_add_item': 'Tambah Item',
+  'edit_tax': 'PPN 11%',
+  'edit_service': 'Service 10%',
+  'edit_save': 'Simpan & Lanjutkan',
+  'edit_invalid_input': 'Masukkan nama menu dan harga yang valid dulu.',
+  'edit_hint_price': 'Harga Per Item',
+  'edit_assign_hint': 'Tap avatar nama teman pada item untuk membagi pesanan:',
+  'edit_add_member': 'Tambah Teman Baru',
+  'edit_member_name_hint': 'Nama Teman (misal: Budi / Siti)',
+  'edit_save_member': 'Simpan Anggota',
+  'edit_name_example': 'Misal: Nasi Goreng Special',
+  'edit_price_example': 'Misal: 35000',
+  'edit_save_item': 'Simpan Item Pesanan',
+  'edit_edit_item': 'Edit Item & Nominal Harga',
+  'edit_menu_name': 'Nama Menu Pesanan',
+  'edit_delete_item': 'Hapus Item',
+  'edit_save_changes': 'Simpan Perubahan',
+  'edit_members': 'Anggota Split',
+  'edit_orders': 'Daftar Pesanan & Pembagian',
+  'edit_add_friend': '+ Tambah Teman',
+  'edit_add_item_label': '+ Tambah Item',
+  'edit_item_price': 'Harga',
+  'edit_item_qty': 'Qty',
+
+  // Create Split Dialog
+  'create_manual_title': 'Buat Split / Struk Manual',
+  'create_invalid_input': 'Masukkan nama menu dan harga yang valid dulu.',
+  'create_name_hint': 'Misal: Kopi Kenangan / Resto Padang',
+  'create_category_hint': 'Misal: Resto & Cafe / Belanja',
+  'create_members': 'Anggota Grup Split',
+  'create_member_hint': 'Nama Teman (misal: Budi)',
+  'create_input_items': 'Input Item Pesanan & Harga Manual',
+  'create_no_items':
+      'Belum ada item ditambahkan. Anda bisa input di atas atau nanti di editor.',
+  'create_name': 'Nama Struk',
+  'create_category': 'Kategori',
+  'create_item_name': 'Nama Menu (misal: Nasi Goreng)',
+  'create_item_price': 'Harga (35000)',
+  'create_subtotal': 'Subtotal',
+  'create_create': 'Buat Split Manual Sekarang',
+  'create_add_member': '+ Tambah',
+  'create_item_label': 'item',
+
+  // Scanner
+  'scan_place_guide': 'Tempatkan struk di dalam bingkai',
+  'scan_simulate': 'Simulasi Tampilan Kamera OCR',
+  'scan_camera_error':
+      'Kamera tidak tersedia. Gunakan galeri atau tombol simulasi.',
+  'scan_failed':
+      'Gagal membaca struk. Coba lagi dengan pencahayaan lebih baik.',
+  'scan_mlkit_unavailable':
+      'Modul OCR (ML Kit) belum tersedia di perangkat ini. Pastikan HP terhubung internet dan Google Play Services aktif, lalu coba lagi.',
+  'scan_processing2': 'AI Membaca Struk dengan Lottie...',
+  'scan_smart': 'AI Smart Scanner',
+
+  // OCR Result Preview
+  'ocr_preview_title': 'Hasil Scan OCR',
+  'ocr_preview_item_count': 'Item',
+  'ocr_preview_raw': 'Teks Mentah OCR (bisa diedit)',
+  'ocr_preview_raw_hint':
+      'Perbaiki salah baca OCR di sini, lalu tekan Parse Ulang...',
+  'ocr_preview_reparse': 'Parse Ulang',
+  'ocr_preview_reparsed': 'Berhasil di-parse ulang',
+  'ocr_preview_items': 'Item Hasil Scan',
+  'ocr_preview_add_item': 'Tambah Item',
+  'ocr_preview_edit_item': 'Edit Item',
+  'ocr_preview_continue': 'Lanjutkan',
+  'ocr_preview_image': 'Gambar Hasil Scan',
+  'ocr_preview_image_tap': 'Ketuk untuk perbesar',
+
+  // Settings
+  'set_title': 'Pengaturan',
+  'set_profile': 'Marko',
+  'set_profile_email': 'marko@fairsplit.app',
+  'set_pref': 'Preferensi',
+  'set_currency': 'Mata Uang',
+  'set_language': 'Bahasa',
+  'set_dark': 'Mode Gelap',
+  'set_notif': 'Notifikasi',
+  'set_notif_push': 'Push Notifications',
+  'set_notif_email': 'Email Reminders',
+  'set_db': 'Manajemen Database & Data Real-Time',
+  'set_db_clear': 'Gunakan Database Kosong (Bersih)',
+  'set_db_clear_desc': 'Hapus struk contoh & mulai catat data asli Anda',
+  'set_db_load': 'Muat Struk Contoh (Demo)',
+  'set_db_load_desc': 'Isi kembali 3 struk contoh untuk keperluan demo',
+  'set_db_cleared':
+      'Database telah dibersihkan! Aplikasi kini menggunakan 0 data dummy.',
+  'set_db_loaded': 'Data struk contoh demo berhasil dimuat ulang!',
+  'set_wallet': 'Rekening & E-Wallet Saya',
+  'set_help': 'Bantuan & Tentang',
+  'set_tutorial': 'Lihat Tutorial',
+  'set_about': 'Tentang Aplikasi',
+  'set_pick_currency': 'Pilih Mata Uang',
+  'set_pick_language': 'Pilih Bahasa',
+  'set_version': 'v1.0.0 (Neo-Brutalist Edition)',
+
+  // Splash
+  'splash_tagline': 'Hitung Cepat, Split Adil ⚡',
+  'splash_loading': 'Memuat Data & Pengaturan...',
+
+  // Onboarding Tutorial (in-app)
+  'tut_skip': 'Lewati',
+  'tut_next': 'Selanjutnya',
+  'tut_done': 'Selesai',
+  'tut2_scan_title': 'Scan Struk',
+  'tut2_scan_desc':
+      'Ketuk tombol kamera ini untuk memotret struk — nama menu & harga terbaca otomatis dan bisa dikoreksi dulu.',
+  'tut2_home_title': 'Beranda',
+  'tut2_home_desc':
+      'Lihat ringkasan pengeluaran, tren, dan struk terbaru di sini.',
+  'tut2_history_title': 'Riwayat',
+  'tut2_history_desc':
+      'Semua struk tersimpan rapi di tab ini dan bisa dicari kapan saja.',
+  'tut2_summary_title': 'Ringkasan',
+  'tut2_summary_desc':
+      'Lihat tagihan per anggota dan tandai siapa yang sudah lunas di sini.',
+  'tut2_settings_title': 'Pengaturan',
+  'tut2_settings_desc': 'Atur mata uang, bahasa, dan mode gelap lewat tab ini.',
+
+  // Common
+  'common_ok': 'OK',
+  'common_batal': 'Batal',
+  'common_lunas': 'Lunas',
+  'common_utama': 'Utama',
+};
+
+const Map<String, String> _en = {
+  // Navigation
+  'nav_home': 'Home',
+  'nav_history': 'History',
+  'nav_summary': 'Summary',
+  'nav_settings': 'Settings',
+
+  // Dashboard
+  'dash_greeting_morning': 'Good Morning',
+  'dash_greeting_afternoon': 'Good Afternoon',
+  'dash_greeting_evening': 'Good Evening',
+  'dash_greeting_name': 'Marko',
+  'dash_total': 'Total',
+  'dash_status': 'Proportional',
+  'dash_noresult_desc': 'Try different keywords or check the spelling.',
+  'dash_search_hint': 'Search receipts or members...',
+  'dash_chart_6mo': 'Total spending last 6 months (in Thousands Rp)',
+  'dash_new_receipts': 'New Receipt',
+  'dash_not_settled': 'Not Settled',
+  'dash_proporsional': 'Proportional',
+  'dash_items': 'Items',
+  'dash_counted': 'Counted',
+  'dash_menunggu': 'Waiting',
+  'dash_psn': 'Pcs',
+  'dash_pndg': 'Pndg',
+  'dash_category_chart': 'Spending by Category (Real-Time)',
+  'dash_trend_chart': 'Split Bill Trend (Real-Time)',
+  'dash_empty_all': 'No Receipts Yet',
+  'dash_not_found': 'Not Found',
+  'dash_lihat_edit': 'View & Edit Split Details',
+  'dash_group': 'Group',
+  'dash_split_active': 'Active Splits',
+  'dash_buat_baru': 'Create New',
+  'dash_buat_baru_plus': '+ Create New',
+  'dash_buat_struk_baru': 'Create New Receipt',
+  'dash_empty_desc2':
+      'Tap the + New Receipt button to upload a receipt and start splitting bills with friends.',
+  'dash_member_transfer': '{paid}/{total} Members Transferred',
+  'dash_bulan_ini': 'This Month',
+
+  // Riwayat
+  'his_title': 'Split Bill History',
+  'his_tab_all': 'All',
+  'his_tab_lunas': 'Settled',
+  'his_tab_pending': 'Pending',
+  'his_search_hint': 'Search history...',
+  'his_empty': 'No transaction history yet',
+  'his_empty_search': 'No results found',
+  'his_lunas': 'Settled',
+  'his_menunggu': 'Pending',
+
+  // Ringkasan
+  'ring_pembayaran': 'Payment Summary',
+  'ring_total_tagihan': 'Total Bill',
+  'ring_lunas_status': 'SETTLED',
+  'ring_belum_bayar': 'NOT PAID',
+  'ring_belum_bayar2': 'Not Paid',
+  'ring_status_changed': 'Status of {name} changed to {status}',
+  'ring_deleted': 'Receipt "{title}" deleted!',
+  'ring_share_wa': 'Opening WhatsApp to share details...',
+  'ring_share_failed': 'Could not open sharing app.',
+  'ring_pdf': 'Downloading receipt PDF...',
+  'ring_lunas': 'Settled',
+  'ring_incl_tax': 'Incl. Tax & Service ({pct}%)',
+  'ring_subtotal': 'Subtotal',
+  'ring_pajak_layanan': 'Tax & Service ({pct}%)',
+  'ring_total_anda': 'Your Total',
+  'ring_bagikan': 'Share to WhatsApp',
+  'ring_simpan_pdf': 'Save to PDF',
+
+  // Delete confirmation
+  'del_confirm_title': 'Delete Receipt?',
+  'del_confirm_desc': 'Receipt "{title}" will be permanently deleted.',
+  'del_cancel': 'Cancel',
+  'del_hapus': 'Delete',
+
+  // Bill Editor
+  'edit_title': 'Edit Receipt & Orders',
+  'edit_add_item': 'Add Item',
+  'edit_tax': 'VAT 11%',
+  'edit_service': 'Service 10%',
+  'edit_save': 'Save & Continue',
+  'edit_invalid_input': 'Enter a valid item name and price first.',
+  'edit_hint_price': 'Price Per Item',
+  'edit_assign_hint': 'Tap a member name on an item to split the order:',
+  'edit_add_member': 'Add New Friend',
+  'edit_member_name_hint': 'Friend Name (e.g. Budi / Siti)',
+  'edit_save_member': 'Save Member',
+  'edit_name_example': 'E.g. Special Fried Rice',
+  'edit_price_example': 'E.g. 35000',
+  'edit_save_item': 'Save Order Item',
+  'edit_edit_item': 'Edit Item & Price',
+  'edit_menu_name': 'Order Item Name',
+  'edit_delete_item': 'Delete Item',
+  'edit_save_changes': 'Save Changes',
+  'edit_members': 'Split Members',
+  'edit_orders': 'Orders & Distribution',
+  'edit_add_friend': '+ Add Friend',
+  'edit_add_item_label': '+ Add Item',
+  'edit_item_price': 'Price',
+  'edit_item_qty': 'Qty',
+
+  // Create Split Dialog
+  'create_manual_title': 'Create Split / Manual Receipt',
+  'create_invalid_input': 'Enter a valid item name and price first.',
+  'create_name_hint': 'E.g. Kopi Kenangan / Padang Restaurant',
+  'create_category_hint': 'E.g. Restaurant & Cafe / Shopping',
+  'create_members': 'Split Group Members',
+  'create_member_hint': 'Friend Name (e.g. Budi)',
+  'create_input_items': 'Manual Order Items & Prices',
+  'create_no_items':
+      'No items added yet. Add them above or later in the editor.',
+  'create_name': 'Receipt Name',
+  'create_category': 'Category',
+  'create_item_name': 'Item Name (e.g. Nasi Goreng)',
+  'create_item_price': 'Price (35000)',
+  'create_subtotal': 'Subtotal',
+  'create_create': 'Create Split Manually',
+  'create_add_member': '+ Add',
+  'create_item_label': 'items',
+
+  // Scanner
+  'scan_place_guide': 'Place the receipt inside the frame',
+  'scan_simulate': 'Camera OCR Preview (Simulation)',
+  'scan_camera_error': 'Camera unavailable. Use gallery or simulation button.',
+  'scan_failed': 'Failed to read receipt. Try again with better lighting.',
+  'scan_mlkit_unavailable':
+      'The OCR module (ML Kit) is not available on this device. Make sure your phone is online and Google Play Services is up to date, then try again.',
+  'scan_processing2': 'AI reading receipt...',
+  'scan_smart': 'AI Smart Scanner',
+
+  // OCR Result Preview
+  'ocr_preview_title': 'OCR Scan Result',
+  'ocr_preview_item_count': 'Items',
+  'ocr_preview_raw': 'Raw OCR Text (editable)',
+  'ocr_preview_raw_hint': 'Fix OCR misreads here, then press Re-parse...',
+  'ocr_preview_reparse': 'Re-parse',
+  'ocr_preview_reparsed': 'Re-parsed successfully',
+  'ocr_preview_items': 'Scanned Items',
+  'ocr_preview_add_item': 'Add Item',
+  'ocr_preview_edit_item': 'Edit Item',
+  'ocr_preview_continue': 'Continue',
+  'ocr_preview_image': 'Scanned Image',
+  'ocr_preview_image_tap': 'Tap to enlarge',
+
+  // Settings
+  'set_title': 'Settings',
+  'set_profile': 'Marko',
+  'set_profile_email': 'marko@fairsplit.app',
+  'set_pref': 'Preferences',
+  'set_currency': 'Currency',
+  'set_language': 'Language',
+  'set_dark': 'Dark Mode',
+  'set_notif': 'Notifications',
+  'set_notif_push': 'Push Notifications',
+  'set_notif_email': 'Email Reminders',
+  'set_db': 'Database & Real-Time Data Management',
+  'set_db_clear': 'Use Empty Database (Clean)',
+  'set_db_clear_desc': 'Remove sample receipts & start recording your own',
+  'set_db_load': 'Load Sample Receipts (Demo)',
+  'set_db_load_desc': 'Restore 3 sample receipts for demo purposes',
+  'set_db_cleared': 'Database cleared! App now uses 0 dummy data.',
+  'set_db_loaded': 'Demo sample receipts loaded successfully!',
+  'set_wallet': 'My Accounts & E-Wallets',
+  'set_help': 'Help & About',
+  'set_tutorial': 'View Tutorial',
+  'set_about': 'About App',
+  'set_pick_currency': 'Select Currency',
+  'set_pick_language': 'Select Language',
+  'set_version': 'v1.0.0 (Neo-Brutalist Edition)',
+
+  // Splash
+  'splash_tagline': 'Split Bill, Fair & Easy ⚡',
+  'splash_loading': 'Loading data & settings...',
+
+  // Onboarding Tutorial (in-app)
+  'tut_skip': 'Skip',
+  'tut_next': 'Next',
+  'tut_done': 'Done',
+  'tut2_scan_title': 'Scan Receipt',
+  'tut2_scan_desc':
+      'Tap this camera button to snap a receipt — item names & prices are read automatically and can be reviewed first.',
+  'tut2_home_title': 'Home',
+  'tut2_home_desc': 'See spending summary, trends, and recent receipts here.',
+  'tut2_history_title': 'History',
+  'tut2_history_desc':
+      'All receipts are stored neatly in this tab and searchable anytime.',
+  'tut2_summary_title': 'Summary',
+  'tut2_summary_desc': 'See each member\'s bill and mark who has paid here.',
+  'tut2_settings_title': 'Settings',
+  'tut2_settings_desc':
+      'Manage currency, language, and dark mode from this tab.',
+
+  // Common
+  'common_ok': 'OK',
+  'common_batal': 'Cancel',
+  'common_lunas': 'Settled',
+  'common_utama': 'Default',
+};

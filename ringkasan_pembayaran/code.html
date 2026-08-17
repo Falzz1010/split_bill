@@ -1,0 +1,366 @@
+<!DOCTYPE html><html lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Ringkasan Pembayaran - FairSplit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&amp;family=Plus+Jakarta+Sans:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error": "#ba1a1a",
+                      "primary": "#735c00",
+                      "outline": "#80765f",
+                      "outline-variant": "#d1c5ab",
+                      "on-tertiary-fixed": "#001f23",
+                      "surface-container-low": "#fdf3e0",
+                      "surface-container-highest": "#ebe1d0",
+                      "on-tertiary-container": "#00646e",
+                      "on-tertiary": "#ffffff",
+                      "primary-container": "#ffcd00",
+                      "secondary-container": "#62fae3",
+                      "on-tertiary-fixed-variant": "#004f57",
+                      "surface": "#fff8f0",
+                      "secondary-fixed": "#62fae3",
+                      "surface-container": "#f7eddb",
+                      "on-background": "#1f1b10",
+                      "tertiary-container": "#00e8fd",
+                      "inverse-surface": "#353024",
+                      "on-primary-fixed": "#241a00",
+                      "inverse-primary": "#f0c100",
+                      "surface-tint": "#735c00",
+                      "on-primary-container": "#6f5800",
+                      "surface-dim": "#e2d9c7",
+                      "tertiary-fixed": "#91f1ff",
+                      "on-primary-fixed-variant": "#574500",
+                      "secondary": "#006b5f",
+                      "on-surface-variant": "#4e4632",
+                      "error-container": "#ffdad6",
+                      "on-surface": "#1f1b10",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed": "#00201c",
+                      "tertiary": "#006973",
+                      "on-secondary-container": "#007165",
+                      "on-error-container": "#93000a",
+                      "surface-bright": "#fff8f0",
+                      "secondary-fixed-dim": "#3cddc7",
+                      "on-error": "#ffffff",
+                      "surface-variant": "#ebe1d0",
+                      "tertiary-fixed-dim": "#00dbee",
+                      "on-secondary-fixed-variant": "#005047",
+                      "primary-fixed-dim": "#f0c100",
+                      "background": "#fff8f0",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#faf0dd",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-fixed": "#ffe089",
+                      "surface-container-high": "#f1e7d5"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "lg": "24px",
+                      "base": "4px",
+                      "sm": "12px",
+                      "offset": "3px",
+                      "xs": "8px",
+                      "xl": "32px",
+                      "border_width": "2.5px",
+                      "md": "16px",
+                      "safe": "max(env(safe-area-inset-bottom), 16px)"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-md": [
+                              "Outfit"
+                      ],
+                      "headline-xl": [
+                              "Outfit"
+                      ],
+                      "headline-lg": [
+                              "Outfit"
+                      ],
+                      "label-sm": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-bold": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "headline-xl": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "headline-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-bold": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .neo-shadow {
+            box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 1);
+        }
+        .neo-border {
+            border: 2.5px solid #000000;
+        }
+        .neo-btn:active {
+            transform: translate(3px, 3px);
+            box-shadow: none;
+        }
+        
+        /* Interactive Card Hover */
+        .interactive-card {
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+        .interactive-card:active {
+             transform: translate(3px, 3px);
+             box-shadow: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-[100px] md:pb-0 pt-[80px] md:pt-[100px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-background dark:bg-background px-lg pt-xl pb-md border-none flex justify-between items-center h-[80px] md:h-[100px]">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full neo-border overflow-hidden bg-primary-container">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A brightly lit, minimalist user avatar illustration featuring a stylized, friendly face against a solid yellow background. The design is simple, flat, and uses bold, contrasting colors in a neo-brutalist aesthetic, perfect for a modern finance app profile picture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLjpXm8wzs1r-9WbyO3fC18qPBkQ4-cUQCKNa4FwHm4Ef45Py22ldAVF616QPmxv1gggHLhcJ0yoLszhUHUOzwQzwE1WPO3-dwPrSxctxSQKZe4TuE7NVikjfxAnQApPYIRsi7yV9gt06QwohPJegYlwjQzD3xMZ3Ef-r4v-HPK9VytUsP9sGf1guP170fTqOBcvaCYXAojEW0ePnbldZnXB4D0ApUtb01Ef0VEZhh-iIew9_Jt8Bs">
+</div>
+<div>
+<h1 class="text-headline-lg font-headline-lg text-primary dark:text-primary-fixed">Hi, Marko</h1>
+</div>
+</div>
+<button class="neo-border bg-surface-container-highest px-md py-xs rounded-full neo-shadow neo-btn text-body-lg font-body-lg font-bold flex items-center gap-2">
+            + Struk Baru
+        </button>
+</header>
+<!-- Main Canvas -->
+<main class="max-w-4xl mx-auto px-lg md:px-xl flex flex-col gap-lg">
+<!-- Header -->
+<div class="mt-lg">
+<h2 class="text-headline-xl font-headline-xl text-on-background">Ringkasan Pembayaran</h2>
+<p class="text-body-lg font-body-lg text-on-surface-variant mt-2">Makan Malam di Sederhana - 24 Okt 2023</p>
+</div>
+<!-- Total Bill Card -->
+<section class="bg-primary-container rounded-xl neo-border neo-shadow p-lg flex flex-col items-center justify-center text-center">
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-on-primary-container mb-2">Total Tagihan</span>
+<h3 class="text-headline-xl font-headline-xl text-on-primary-fixed tracking-tight">Rp 450.000</h3>
+<div class="flex items-center gap-2 mt-4 bg-surface/50 px-4 py-2 rounded-full neo-border">
+<span class="material-symbols-outlined text-sm">receipt</span>
+<span class="text-label-bold font-label-bold text-on-surface">Termasuk Pajak &amp; Layanan (15%)</span>
+</div>
+</section>
+<!-- Breakdown Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-lg mt-md">
+<!-- Person 1 -->
+<div class="bg-secondary-container rounded-xl neo-border p-md flex flex-col gap-sm">
+<div class="flex items-center justify-between pb-sm border-b-[2.5px] border-black">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full neo-border bg-white overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A simple, stylized avatar of a person with short hair, smiling slightly, set against a stark white background. The illustration uses thick black outlines and flat colors, matching a playful, modern neo-brutalist app design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA20Gx-zpIpviheYpytI6pqNkl2kUBtcznRnFAmajNLFP1BUD8Tj5o6J4xuqohTsPuc61LopVzXGt4ZpPZmY0JlYj0bh8f-sSM6VEYBP0xLe6AQ5b0HyRJuLB3jHpYbwN_60KAUVqEu46pVzr0Dz_HpGIPr2lz4HbjL-IVT9vw0NAgO3c7lJjDt_Q2cqoSySX6VAI31Ema7on5OyyoK3vQqvdYZnjYlghRGQ4oYgyqQIwSltzqDGShe">
+</div>
+<h4 class="text-headline-md font-headline-md text-on-background">Andi</h4>
+</div>
+<span class="bg-white px-3 py-1 rounded-full neo-border text-label-bold font-label-bold">Belum Lunas</span>
+</div>
+<ul class="flex flex-col gap-2 mt-2">
+<li class="flex justify-between text-body-md font-body-md">
+<span class="">Ayam Pop (x1)</span>
+<span class="">Rp 25.000</span>
+</li>
+<li class="flex justify-between text-body-md font-body-md">
+<span class="">Nasi Putih (x1)</span>
+<span class="">Rp 10.000</span>
+</li>
+<li class="flex justify-between text-body-md font-body-md">
+<span class="">Es Teh Manis (x1)</span>
+<span class="">Rp 8.000</span>
+</li>
+</ul>
+<div class="mt-auto pt-sm border-t-[2.5px] border-black flex flex-col gap-1">
+<div class="flex justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span class="">Subtotal</span>
+<span class="">Rp 43.000</span>
+</div>
+<div class="flex justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span class="">Pajak (15%)</span>
+<span class="">Rp 6.450</span>
+</div>
+<div class="flex justify-between items-end mt-2">
+<span class="text-body-lg font-body-lg font-bold">Total Anda</span>
+<span class="text-headline-md font-headline-md">Rp 49.450</span>
+</div>
+</div>
+</div>
+<!-- Person 2 -->
+<div class="bg-[#ffdad6] rounded-xl neo-border p-md flex flex-col gap-sm">
+<div class="flex items-center justify-between pb-sm border-b-[2.5px] border-black">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full neo-border bg-white overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A minimalist, stylized portrait avatar of a woman with long hair, wearing glasses, drawn with heavy black outlines on a pure white background. The style is flat, graphic, and aligns with a friendly neo-brutalist user interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPje-oICDpzslGihzikxpNBFM8RRd_FYSqfSjVl1pQ6QKZcSIdcCWU2-kYlWq0aR4RoRkUtPzmHoyZ6ihh0fuJ3URDiQAJXBuLoFuiD3-tcCQ3zjHKS91jVM3ibR5lPuXFs6NoK-bF--07-NqfVQipqMlySw46HGDPH5TXe6BuUK7Dx7IxZl07lKwihLIOz8bljWlNtEiPFT7h8i97F6hVfu_-gV934MYeXzcC6-Thb0vbe_CIzBQX">
+</div>
+<h4 class="text-headline-md font-headline-md text-on-background">Budi</h4>
+</div>
+<span class="bg-[#c4edcd] px-3 py-1 rounded-full neo-border text-label-bold font-label-bold">Lunas</span>
+</div>
+<ul class="flex flex-col gap-2 mt-2">
+<li class="flex justify-between text-body-md font-body-md">
+<span class="">Rendang (x2)</span>
+<span class="">Rp 60.000</span>
+</li>
+<li class="flex justify-between text-body-md font-body-md">
+<span class="">Nasi Putih (x2)</span>
+<span class="">Rp 20.000</span>
+</li>
+<li class="flex justify-between text-body-md font-body-md">
+<span class="">Jus Alpukat (x1)</span>
+<span class="">Rp 25.000</span>
+</li>
+</ul>
+<div class="mt-auto pt-sm border-t-[2.5px] border-black flex flex-col gap-1">
+<div class="flex justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span class="">Subtotal</span>
+<span class="">Rp 105.000</span>
+</div>
+<div class="flex justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span class="">Pajak (15%)</span>
+<span class="">Rp 15.750</span>
+</div>
+<div class="flex justify-between items-end mt-2">
+<span class="text-body-lg font-body-lg font-bold">Total Anda</span>
+<span class="text-headline-md font-headline-md">Rp 120.750</span>
+</div>
+</div>
+</div>
+<!-- Shared Items (Split evenly) -->
+<div class="bg-surface-container-highest rounded-xl neo-border p-md flex flex-col gap-sm md:col-span-2">
+<div class="flex items-center justify-between pb-sm border-b-[2.5px] border-black">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 flex items-center justify-center rounded-full neo-border bg-white">
+<span class="material-symbols-outlined text-primary">groups</span>
+</div>
+<h4 class="text-headline-md font-headline-md text-on-background">Dibagi Rata (4 Orang)</h4>
+</div>
+</div>
+<ul class="flex flex-col gap-2 mt-2">
+<li class="flex justify-between text-body-md font-body-md">
+<span class="">Kerupuk Kulit (x2)</span>
+<span class="">Rp 30.000</span>
+</li>
+<li class="flex justify-between text-body-md font-body-md">
+<span class="">Sayur Nangka (x1 Porsi Besar)</span>
+<span class="">Rp 40.000</span>
+</li>
+</ul>
+<div class="mt-auto pt-sm border-t-[2.5px] border-black flex flex-col gap-1">
+<div class="flex justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span class="">Total Bersama</span>
+<span class="">Rp 70.000</span>
+</div>
+<div class="flex justify-between items-end mt-2">
+<span class="text-body-lg font-body-lg font-bold">Per Orang (+Pajak)</span>
+<span class="text-headline-md font-headline-md">Rp 20.125</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Actions -->
+<section class="flex flex-col gap-sm mt-lg mb-xl">
+<button class="w-full bg-[#c4edcd] text-on-background py-md rounded-full neo-border neo-shadow neo-btn text-body-lg font-body-lg font-bold flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">share</span>
+                Bagikan ke WhatsApp
+            </button>
+<button class="w-full bg-white text-on-background py-md rounded-full neo-border neo-shadow neo-btn text-body-lg font-body-lg font-bold flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">download</span>
+                Simpan ke PDF
+            </button>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-[80px] bg-surface-container-lowest border-t-[2.5px] border-on-background px-md pb-safe">
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-transform duration-100" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-label-bold font-label-bold mt-1 text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-transform duration-100" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-label-bold font-label-bold mt-1 text-[10px]">History</span>
+</a>
+<!-- Central Scan Button -->
+<div class="relative -top-6">
+<button class="w-16 h-16 bg-primary-container rounded-full neo-border neo-shadow flex items-center justify-center neo-button-hover relative z-10">
+<img class="w-10 h-10 object-contain" data-alt="A very simple, minimal icon of an orange cat head inside a circle, acting as a logo mark for a scanning button." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-okgYk7Vl2AKUjfxUh5Dc5OYiVc0th9BJWF1_4XDdAayUf_1RJBxwrqs3am63E8T3XBXn4t-_gvPGj9ejYrjzlz8yYkwZMJeoMs_3pbvvc9SZTbKGJBAMheYkKAdnBVny7iXnx7RjwqfXPBSFtdNtkNb5ho7DqCXrH0pmvEw5_myDzXFcuhw_O1RUqeISdbKT55O87BvMIHVHtlj1A3Dyrc3twjGyQIKSrKiXEPONoR0zb7Ro1U0u">
+<span class="material-symbols-outlined absolute inset-0 flex items-center justify-center text-on-surface opacity-0 hover:opacity-100 transition-opacity">document_scanner</span>
+</button>
+</div>
+<a class="flex flex-col items-center justify-center text-on-background scale-110 hover:text-primary transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bar_chart</span>
+<span class="text-label-bold font-label-bold mt-1 text-[10px]">Summary</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-transform duration-100" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-bold font-label-bold mt-1 text-[10px]">Settings</span>
+</a>
+</nav>
+
+
+</body></html>

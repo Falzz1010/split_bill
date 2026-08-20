@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fairsplit/core/models/split_model.dart';
+import 'package:fairsplit/core/theme/app_colors.dart';
 import 'package:fairsplit/features/bill_editor/screens/create_split_dialog.dart';
+
+import 'helpers/palette_test_wrapper.dart';
 
 void main() {
   Finder fieldWithHint(String hint) => find.byWidgetPredicate(
@@ -9,8 +12,8 @@ void main() {
       );
 
   Widget buildHarness(Function(SplitBill) onCreateSplit) {
-    return MaterialApp(
-      home: Scaffold(
+    return wrapWithPalette(
+      Scaffold(
         body: Builder(
           builder: (context) => Center(
             child: ElevatedButton(

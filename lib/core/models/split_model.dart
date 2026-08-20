@@ -40,12 +40,12 @@ class Member {
   };
 
   factory Member.fromJson(Map<String, dynamic> json) => Member(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    avatarUrl: json['avatarUrl'] as String? ?? '',
-    accentColorHex: json['accentColorHex'] as String? ?? '#FFCD00',
+    id: json['id']?.toString() ?? '',
+    name: json['name']?.toString() ?? 'Unknown',
+    avatarUrl: json['avatarUrl']?.toString() ?? '',
+    accentColorHex: json['accentColorHex']?.toString() ?? '#FFCD00',
     isPaid: json['isPaid'] as bool? ?? false,
-    amountOwed: (json['amountOwed'] as num).toDouble(),
+    amountOwed: (json['amountOwed'] as num?)?.toDouble() ?? 0.0,
   );
 }
 
@@ -89,13 +89,14 @@ class ReceiptItem {
   };
 
   factory ReceiptItem.fromJson(Map<String, dynamic> json) => ReceiptItem(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    price: (json['price'] as num).toDouble(),
-    quantity: json['quantity'] as int? ?? 1,
-    assignedMemberIds: List<String>.from(
-      json['assignedMemberIds'] as List? ?? [],
-    ),
+    id: json['id']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    price: (json['price'] as num?)?.toDouble() ?? 0.0,
+    quantity: (json['quantity'] as int?) ?? 1,
+    assignedMemberIds: (json['assignedMemberIds'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [],
   );
 }
 
@@ -142,9 +143,12 @@ class SplitBill {
         members.any((m) => m.name.toLowerCase().contains(q));
   }
 
-  /// Kategori menyimpan prefix "N Anggota • " sebagai konvensi data yang
-  /// di-parse dashboard. [categoryLabel] mengambil bagian setelah prefix.
+  /// Kategori yang disimpan selalu label polos (tanpa prefix). Data lama yang
+  /// masih memakai prefix "N Anggota • " dibersihkan lewat [categoryLabel].
   String get categoryLabel => categoryLabelOf(category);
+
+  /// Label tampilan dengan jumlah anggota, mis. "4 Anggota • F&B Resto".
+  String get displayCategory => categoryWithMemberCount(category, members.length);
 
   SplitBill copyWith({
     String? title,
@@ -188,28 +192,39 @@ class SplitBill {
     'items': items.map((i) => i.toJson()).toList(),
   };
 
-  factory SplitBill.fromJson(Map<String, dynamic> json) => SplitBill(
-    id: json['id'] as String,
-    title: json['title'] as String,
-    category: json['category'] as String,
-    date: DateTime.parse(json['date'] as String),
-    subtotal: (json['subtotal'] as num).toDouble(),
-    tax: (json['tax'] as num).toDouble(),
-    serviceCharge: (json['serviceCharge'] as num).toDouble(),
-    discount: (json['discount'] as num).toDouble(),
-    totalAmount: (json['totalAmount'] as num).toDouble(),
-    isCompleted: json['isCompleted'] as bool? ?? false,
-    members: (json['members'] as List)
-        .map((m) => Member.fromJson(m as Map<String, dynamic>))
-        .toList(),
-    items: (json['items'] as List)
-        .map((i) => ReceiptItem.fromJson(i as Map<String, dynamic>))
-        .toList(),
-  );
+  factory SplitBill.fromJson(Map<String, dynamic> json) {
+    DateTime date;
+    try {
+      date = DateTime.parse(json['date']?.toString() ?? '');
+    } catch (_) {
+      date = DateTime.now();
+    }
+    return SplitBill(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? 'Untitled',
+      category: json['category']?.toString() ?? '',
+      date: date,
+      subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0.0,
+      tax: (json['tax'] as num?)?.toDouble() ?? 0.0,
+      serviceCharge: (json['serviceCharge'] as num?)?.toDouble() ?? 0.0,
+      discount: (json['discount'] as num?)?.toDouble() ?? 0.0,
+      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
+      isCompleted: json['isCompleted'] as bool? ?? false,
+      members: (json['members'] as List<dynamic>?)
+              ?.map((m) => Member.fromJson(m as Map<String, dynamic>))
+              .toList() ??
+          [],
+      items: (json['items'] as List<dynamic>?)
+              ?.map((i) => ReceiptItem.fromJson(i as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
 }
 
-/// Kategori menyimpan konvensi "N Anggota • <label>". Dua helper ini adalah
-/// satu-satunya tempat format itu ditulis/dibaca.
+/// Kategori lama menyimpan konvensi "N Anggota • <label>"; kategori baru
+/// menyimpan label polos. [categoryLabelOf] membersihkan prefix data lama
+/// agar satu format, [categoryWithMemberCount] hanya untuk tampilan.
 String categoryLabelOf(String category) =>
     category.contains('•') ? category.split('•').last.trim() : category;
 
@@ -235,6 +250,8 @@ String categoryWithMemberCount(String category, int count) =>
 
 /// Menghitung nominal tagihan per anggota secara proporsional:
 /// pembagian item yang ditugaskan + porsi pajak/service/discount sebanding.
+/// Hasil dibulatkan ke rupiah utuh (metode sisa terbesar) sehingga jumlah
+/// tagihan semua member selalu tepat sama dengan total tagihan.
 List<Member> computeMemberAmounts(
   List<Member> members,
   List<ReceiptItem> items, {
@@ -265,9 +282,33 @@ List<Member> computeMemberAmounts(
       .clamp(0.0, double.infinity)
       .toDouble();
 
-  return members.map((member) {
+  final raw = members.map((member) {
     final base = memberShares[member.id] ?? 0;
     final extra = totalShare > 0 ? extraTotal * (base / totalShare) : 0.0;
     return member.copyWith(amountOwed: base + extra);
   }).toList();
+
+  return _roundToWholeRupiah(raw, (totalShare + extraTotal).round());
+}
+
+/// Pembulatan rupiah dengan metode sisa terbesar: setiap member dibulatkan
+/// ke bawah, lalu selisih terhadap [target] dibagikan 1 rupiah ke member
+/// dengan pecahan terbesar hingga total persis [target].
+List<Member> _roundToWholeRupiah(List<Member> members, int target) {
+  final floors = members.map((m) => m.amountOwed.floor()).toList();
+  var remainder = target - floors.fold(0, (a, b) => a + b);
+
+  final order = List.generate(members.length, (i) => i)
+    ..sort((a, b) {
+      final fa = members[a].amountOwed - floors[a];
+      final fb = members[b].amountOwed - floors[b];
+      return fb.compareTo(fa);
+    });
+  for (var i = 0; i < remainder && i < order.length; i++) {
+    floors[order[i]] += 1;
+  }
+
+  return List.generate(members.length, (i) {
+    return members[i].copyWith(amountOwed: floors[i].toDouble());
+  });
 }

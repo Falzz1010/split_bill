@@ -23,18 +23,19 @@ class NeoBottomSheet extends StatelessWidget {
     final maxHeight = (mq.size.height - mq.padding.top - bottomPad)
         .clamp(80.0, double.infinity)
         .toDouble();
+    final c = context.palette;
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPad),
       child: Container(
         constraints: BoxConstraints(maxHeight: maxHeight),
         padding: padding,
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: c.background,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           border: Border(
-            top: BorderSide(color: AppColors.borderBlack, width: 3),
-            left: BorderSide(color: AppColors.borderBlack, width: 3),
-            right: BorderSide(color: AppColors.borderBlack, width: 3),
+            top: BorderSide(color: c.borderBlack, width: 3),
+            left: BorderSide(color: c.borderBlack, width: 3),
+            right: BorderSide(color: c.borderBlack, width: 3),
           ),
         ),
         child: child,
@@ -63,7 +64,7 @@ class NeoSheetHeader extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: Icon(Icons.close, color: AppColors.onSurface),
+            icon: Icon(Icons.close, color: context.palette.onSurface),
             onPressed: onClose ?? () => Navigator.pop(context),
           ),
         ],

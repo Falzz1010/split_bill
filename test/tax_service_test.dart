@@ -77,6 +77,46 @@ void main() {
       expect(result[0].amountOwed, 10000);
       expect(result[1].amountOwed, 0);
     });
+
+    test('pembulatan: jumlah tagihan member selalu persis total (rupiah utuh)', () {
+      final members = [_m('a'), _m('b'), _m('c')];
+      final items = [
+        ReceiptItem(
+          id: 'i1',
+          name: 'Kopi',
+          price: 25000,
+          quantity: 1,
+          assignedMemberIds: [],
+        ),
+      ];
+      final result = computeMemberAmounts(members, items);
+      final total = result.fold(0.0, (s, m) => s + m.amountOwed);
+      expect(total, 25000);
+      for (final m in result) {
+        expect(m.amountOwed, m.amountOwed.roundToDouble());
+      }
+    });
+
+    test('pembulatan dengan pajak: tetap utuh & jumlahnya persis total', () {
+      final members = [_m('a'), _m('b')];
+      final items = [
+        ReceiptItem(
+          id: 'i1',
+          name: 'Nasi',
+          price: 33333,
+          quantity: 1,
+          assignedMemberIds: ['a'],
+        ),
+      ];
+      final result = computeMemberAmounts(
+        members,
+        items,
+        tax: 3666.63,
+        serviceCharge: 3333.3,
+      );
+      final total = result.fold(0.0, (s, m) => s + m.amountOwed);
+      expect(total, (33333 + 3666.63 + 3333.3).roundToDouble());
+    });
   });
 
   group('parsePrice', () {

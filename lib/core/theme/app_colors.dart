@@ -48,7 +48,34 @@ class PaletteData {
   final Color errorContainer;
 }
 
+/// InheritedWidget yang membungkus widget tree dan menyediakan [PaletteData]
+/// aktif berdasarkan dark mode. Menggantikan [AppPalette.current] mutable
+/// sehingga state palette hidup di scope widget, bukan di static field.
+class PaletteScope extends InheritedWidget {
+  const PaletteScope({
+    super.key,
+    required this.palette,
+    required super.child,
+  });
+
+  final PaletteData palette;
+
+  /// Ambil palette dari context terdekat — aman dipanggil dari mana saja
+  /// di dalam widget tree yang dibungkus [PaletteScope].
+  static PaletteData of(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<PaletteScope>();
+    assert(scope != null, 'No PaletteScope found in context');
+    return scope!.palette;
+  }
+
+  @override
+  bool updateShouldNotify(PaletteScope oldWidget) => palette != oldWidget.palette;
+}
+
 class AppPalette {
+  // Fallback untuk kode legacy yang belum punya BuildContext.
+  // Hanya dipakai oleh AppColors.getters (static) — kode baru sebaiknya
+  // memakai PaletteScope.of(context) supaya reaktif.
   static PaletteData current = _light;
 
   static const _light = PaletteData(
@@ -99,6 +126,8 @@ class AppPalette {
     errorContainer: Color(0xFF4A1E1C),
   );
 
+  /// Update fallback [current] untuk kode legacy + widget yang
+  /// tidak punya context (mis. `AppColors.primaryContainer`).
   static void applyDark(bool dark) {
     current = dark ? _dark : _light;
   }
@@ -108,8 +137,17 @@ class AppPalette {
   static PaletteData paletteFor(bool dark) => dark ? _dark : _light;
 }
 
+/// Extension pada [BuildContext] untuk mengakses palette secara reaktif.
+/// Contoh: `final c = context.palette;` → `c.primaryContainer`.
+extension BuildContextPalette on BuildContext {
+  PaletteData get palette => PaletteScope.of(this);
+}
+
 /// AppColors defining the Soft Neo-Brutalist Palette for FairSplit.
 /// Colors resolve dynamically so dark mode can switch the palette at runtime.
+///
+/// Gunakan `context.palette.xxx` untuk kode baru (reaktif via InheritedWidget).
+/// `AppColors.xxx` statis tetap tersedia untuk backward-compat.
 class AppColors {
   // Surface & Background
   static Color get background => AppPalette.current.background;

@@ -21,9 +21,10 @@ class NeoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = backgroundColor ?? AppColors.surfaceContainer;
-    final Color text = textColor ?? AppColors.onSurface;
-    final Color border = borderColor ?? AppColors.borderBlack;
+    final c = context.palette;
+    final Color bg = backgroundColor ?? c.surfaceContainer;
+    final Color text = textColor ?? c.onSurface;
+    final Color border = borderColor ?? c.borderBlack;
     Widget chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(

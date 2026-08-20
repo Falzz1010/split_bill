@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fairsplit/main.dart';
+import 'package:fairsplit/core/theme/app_colors.dart';
 import 'package:fairsplit/features/onboarding/widgets/feature_tutorial_overlay.dart';
 
 void main() {
@@ -9,8 +10,10 @@ void main() {
     final targetKey = GlobalKey();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Stack(
+      PaletteScope(
+        palette: AppPalette.paletteFor(false),
+        child: MaterialApp(
+          home: Stack(
           children: [
             Positioned(
               left: 0,
@@ -33,6 +36,7 @@ void main() {
               onFinish: () {},
             ),
           ],
+        ),
         ),
       ),
     );
@@ -64,9 +68,11 @@ void main() {
     SharedPreferences.setMockInitialValues({});
 
     await tester.pumpWidget(const FairSplitApp());
-    // Splash screen menampilkan selama 3.6 detik sebelum navigasi
+    // Splash screen menampilkan selama 4.2 detik + transisi 1 detik
+    // sebelum navigasi
     await tester.pump(const Duration(seconds: 4));
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 2));
 
     // Pengguna baru melihat tutorial langsung di dalam app: langkah pertama
     // menjelaskan tombol kamera (Scan Struk).
@@ -83,6 +89,6 @@ void main() {
     await tester.tap(find.text('Selesai'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Hi, Marko'), findsOneWidget);
+    expect(find.text('Neobill'), findsOneWidget);
   });
 }

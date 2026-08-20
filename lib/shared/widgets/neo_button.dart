@@ -32,8 +32,9 @@ class _NeoButtonState extends State<NeoButton> {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = widget.backgroundColor ?? AppColors.primaryContainer;
-    final Color border = widget.borderColor ?? AppColors.borderBlack;
+    final c = context.palette;
+    final Color bg = widget.backgroundColor ?? c.primaryContainer;
+    final Color border = widget.borderColor ?? c.borderBlack;
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
@@ -99,15 +100,16 @@ class NeoCircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     final Widget circle = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: backgroundColor ?? AppColors.surfaceContainerLowest,
+        color: backgroundColor ?? c.surfaceContainerLowest,
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.borderBlack, width: 2),
+        border: Border.all(color: c.borderBlack, width: 2),
       ),
-      child: Icon(icon, size: iconSize, color: iconColor ?? AppColors.onSurface),
+      child: Icon(icon, size: iconSize, color: iconColor ?? c.onSurface),
     );
     if (onTap == null) {
       return tooltip == null ? circle : Tooltip(message: tooltip!, child: circle);

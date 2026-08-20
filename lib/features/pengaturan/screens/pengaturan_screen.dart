@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/app_l10n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/neo_card.dart';
+import '../../../shared/widgets/neo_paw_logo.dart';
 import '../../../core/state/split_store.dart';
 import '../../../core/settings/settings_service.dart';
+import '../../../core/utils/currency_rates.dart';
+import '../../../shared/widgets/neo_confirm_dialog.dart';
 
 class PengaturanScreen extends StatefulWidget {
   /// Dipanggil saat pengguna memilih "Lihat Tutorial" di bagian Bantuan.
@@ -16,18 +19,18 @@ class PengaturanScreen extends StatefulWidget {
 }
 
 class _PengaturanScreenState extends State<PengaturanScreen> {
-  bool _notificationEnabled = true;
-  bool _emailReminderEnabled = false;
+  bool _refreshingRates = false;
 
   Future<void> _pickCurrency() async {
+    final c = context.palette;
     final selected = await showDialog<String>(
       context: context,
       builder: (context) {
         return SimpleDialog(
-          backgroundColor: AppColors.surfaceContainerLowest,
+          backgroundColor: c.surfaceContainerLowest,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: AppColors.borderBlack, width: 2.5),
+            side: BorderSide(color: c.borderBlack, width: 2.5),
           ),
           title: Text(tr('set_pick_currency')),
           children: [
@@ -40,7 +43,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                   for (final code in SettingsService.supportedCurrencies)
                     RadioListTile<String>(
                       value: code,
-                      activeColor: AppColors.secondary,
+                      activeColor: c.secondary,
                       title: Text(code),
                     ),
                 ],
@@ -56,14 +59,15 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
   }
 
   Future<void> _pickLanguage() async {
+    final c = context.palette;
     final selected = await showDialog<String>(
       context: context,
       builder: (context) {
         return SimpleDialog(
-          backgroundColor: AppColors.surfaceContainerLowest,
+          backgroundColor: c.surfaceContainerLowest,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: AppColors.borderBlack, width: 2.5),
+            side: BorderSide(color: c.borderBlack, width: 2.5),
           ),
           title: Text(tr('set_pick_language')),
           children: [
@@ -76,7 +80,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                   for (final lang in SettingsService.supportedLanguages)
                     RadioListTile<String>(
                       value: lang['code']!,
-                      activeColor: AppColors.secondary,
+                      activeColor: c.secondary,
                       title: Text(lang['name']!),
                     ),
                 ],
@@ -91,44 +95,42 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
     }
   }
 
+  Future<void> _refreshRates() async {
+    setState(() => _refreshingRates = true);
+    final ok = await CurrencyRatesService.instance.refreshRates();
+    if (!mounted) return;
+    setState(() => _refreshingRates = false);
+    final c = context.palette;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok ? tr('set_rates_ok') : tr('set_rates_fail'),
+          style: TextStyle(color: c.background),
+        ),
+        backgroundColor: ok ? c.secondary : c.error,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: SettingsService.instance,
+      listenable: Listenable.merge(
+        [SettingsService.instance, CurrencyRatesService.instance],
+      ),
       builder: (context, _) {
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: context.palette.background,
           body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header dengan Avatar Profil
+                  // Header dengan Logo Aplikasi
                   Row(
                     children: [
-                      Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primaryContainer,
-                          border: Border.all(
-                            color: AppColors.borderBlack,
-                            width: AppColors.borderWidth,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'M',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 18,
-                              color: AppColors.onPrimaryContainer,
-                            ),
-                          ),
-                        ),
-                      ),
+                      NeoPawLogo(size: 46),
                       const SizedBox(width: 10),
                       Text(
                         tr('set_title'),
@@ -138,53 +140,32 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Profile Card
+                  // Card Identitas Aplikasi
                   NeoCard(
-                    backgroundColor: AppColors.surfaceContainerLowest,
+                    backgroundColor: context.palette.surfaceContainerLowest,
                     child: Row(
                       children: [
-                        Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.primaryContainer,
-                            border: Border.all(
-                              color: AppColors.borderBlack,
-                              width: 2.5,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'M',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 22,
-                                color: AppColors.onPrimaryContainer,
-                              ),
-                            ),
-                          ),
-                        ),
+                        NeoPawLogo(size: 56),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                tr('set_profile'),
+                                tr('dash_title'),
                                 style: Theme.of(
                                   context,
                                 ).textTheme.headlineSmall,
                               ),
                               Text(
-                                tr('set_profile_email'),
+                                tr('set_version'),
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
-),
-                      ),
-                    ],
-                  ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
 
@@ -207,10 +188,10 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primaryContainer,
+                                color: context.palette.primaryContainer,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: AppColors.borderBlack,
+                                  color: context.palette.borderBlack,
                                   width: 1.5,
                                 ),
                               ),
@@ -219,7 +200,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
-                                  color: AppColors.onPrimaryContainer,
+                                  color: context.palette.onPrimaryContainer,
                                 ),
                               ),
                             ),
@@ -227,7 +208,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             Icon(
                               Icons.chevron_right_rounded,
                               size: 18,
-                              color: AppColors.onSurfaceVariant,
+                              color: context.palette.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -236,10 +217,42 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       _buildRowTile(
                         context,
                         title: tr('set_language'),
-                        value: SettingsService.instance.language == 'en'
-                            ? 'English'
-                            : 'Indonesia',
                         onTap: _pickLanguage,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: context.palette.primaryContainer,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: context.palette.borderBlack,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Text(
+                                SettingsService.instance.language == 'en'
+                                    ? 'English'
+                                    : 'Indonesia',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: context.palette.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: context.palette.onSurfaceVariant,
+                            ),
+                          ],
+                        ),
                       ),
                       _buildRowDivider(),
                       _buildRowTile(
@@ -248,8 +261,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         onTap: null,
                         trailing: Switch.adaptive(
                           value: SettingsService.instance.darkMode,
-                          activeTrackColor: AppColors.secondaryContainer,
-                          activeThumbColor: AppColors.secondary,
+                          activeTrackColor: context.palette.secondaryContainer,
+                          activeThumbColor: context.palette.secondary,
                           onChanged: (val) =>
                               SettingsService.instance.setDarkMode(val),
                         ),
@@ -258,35 +271,125 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Section: Notifikasi
+                  // Section: Kurs Mata Uang
                   _buildSectionCard(
                     context,
-                    icon: Icons.notifications_rounded,
-                    title: tr('set_notif'),
+                    icon: Icons.currency_exchange_rounded,
+                    title: tr('set_rates'),
                     children: [
-                      _buildRowTile(
-                        context,
-                        title: tr('set_notif_push'),
-                        onTap: null,
-                        trailing: Switch.adaptive(
-                          value: _notificationEnabled,
-                          activeTrackColor: AppColors.secondaryContainer,
-                          activeThumbColor: AppColors.secondary,
-                          onChanged: (val) =>
-                              setState(() => _notificationEnabled = val),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
+                        child: Text(
+                          tr('set_rates_desc'),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.palette.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                      _buildRowDivider(),
-                      _buildRowTile(
-                        context,
-                        title: tr('set_notif_email'),
-                        onTap: null,
-                        trailing: Switch.adaptive(
-                          value: _emailReminderEnabled,
-                          activeTrackColor: AppColors.secondaryContainer,
-                          activeThumbColor: AppColors.secondary,
-                          onChanged: (val) =>
-                              setState(() => _emailReminderEnabled = val),
+                      for (final code in CurrencyRatesService.displayCurrencies)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          child: Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                code,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              Text(
+                                code == 'IDR'
+                                    ? tr('set_rates_base')
+                                    : CurrencyRatesService.instance.formatRate(
+                                        code,
+                                      ),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (CurrencyRatesService.instance.lastUpdated !=
+                                null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(
+                                  tr('set_rates_updated').replaceAll(
+                                    '{time}',
+                                    _fmtTime(
+                                      CurrencyRatesService
+                                          .instance.lastUpdated!,
+                                    ),
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: context.palette.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: _refreshingRates
+                                  ? null
+                                  : _refreshRates,
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: context.palette.secondaryContainer,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: context.palette.borderBlack,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (_refreshingRates)
+                                      SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: context.palette.borderBlack,
+                                        ),
+                                      )
+                                    else
+                                      Icon(
+                                        Icons.cloud_sync_rounded,
+                                        size: 16,
+                                        color: context.palette.borderBlack,
+                                      ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      tr('set_rates_refresh'),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -308,6 +411,13 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         InkWell(
                           borderRadius: BorderRadius.circular(12),
                           onTap: () async {
+                            final confirmed = await showConfirmDialog(
+                              context,
+                              title: tr('set_db_clear_confirm_title'),
+                              message: tr('set_db_clear_confirm_desc'),
+                              confirmLabel: tr('set_db_confirm_ok'),
+                            );
+                            if (!confirmed || !context.mounted) return;
                             await SplitStore.instance.clearAll();
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -315,10 +425,10 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                   content: Text(
                                     tr('set_db_cleared'),
                                     style: TextStyle(
-                                      color: AppColors.background,
+                                      color: context.palette.background,
                                     ),
                                   ),
-                                  backgroundColor: AppColors.onSurface,
+                                  backgroundColor: context.palette.onSurface,
                                 ),
                               );
                             }
@@ -332,7 +442,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               children: [
                                 Icon(
                                   Icons.delete_sweep_rounded,
-                                  color: AppColors.error,
+                                  color: context.palette.error,
                                   size: 24,
                                 ),
                                 const SizedBox(width: 12),
@@ -353,7 +463,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                         tr('set_db_clear_desc'),
                                         style: TextStyle(
                                           fontSize: 11,
-                                          color: AppColors.onSurfaceVariant,
+                                          color: context.palette.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -366,11 +476,18 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         Divider(
                           height: 16,
                           thickness: 1.5,
-                          color: AppColors.outlineVariant,
+                          color: context.palette.outlineVariant,
                         ),
                         InkWell(
                           borderRadius: BorderRadius.circular(12),
                           onTap: () async {
+                            final confirmed = await showConfirmDialog(
+                              context,
+                              title: tr('set_db_load_confirm_title'),
+                              message: tr('set_db_load_confirm_desc'),
+                              confirmLabel: tr('set_db_confirm_ok'),
+                            );
+                            if (!confirmed || !context.mounted) return;
                             await SplitStore.instance.loadDemo();
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -378,10 +495,10 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                   content: Text(
                                     tr('set_db_loaded'),
                                     style: TextStyle(
-                                      color: AppColors.background,
+                                      color: context.palette.background,
                                     ),
                                   ),
-                                  backgroundColor: AppColors.secondary,
+                                  backgroundColor: context.palette.secondary,
                                 ),
                               );
                             }
@@ -395,7 +512,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               children: [
                                 Icon(
                                   Icons.refresh_rounded,
-                                  color: AppColors.secondary,
+                                  color: context.palette.secondary,
                                   size: 24,
                                 ),
                                 const SizedBox(width: 12),
@@ -416,7 +533,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                         tr('set_db_load_desc'),
                                         style: TextStyle(
                                           fontSize: 11,
-                                          color: AppColors.onSurfaceVariant,
+                                          color: context.palette.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -425,36 +542,6 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Payment Methods
-                  Text(
-                    tr('set_wallet'),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.headlineSmall?.copyWith(fontSize: 16),
-                  ),
-                  const SizedBox(height: 12),
-
-                  NeoCard(
-                    child: Column(
-                      children: [
-                        _buildPaymentTile(
-                          context,
-                          name: 'Bank BCA',
-                          account: '1234 5678 90 a/n Marko',
-                          isDefault: true,
-                        ),
-                        const SizedBox(height: 10),
-                        _buildPaymentTile(
-                          context,
-                          name: 'GoPay / QRIS',
-                          account: '0812-3456-7890',
-                          isDefault: false,
                         ),
                       ],
                     ),
@@ -490,6 +577,17 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
     );
   }
 
+  String _fmtTime(DateTime t) {
+    final now = DateTime.now();
+    final local = t.toLocal();
+    final sameDay = local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
+    final hm =
+        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    return sameDay ? hm : '${local.day}/${local.month} $hm';
+  }
+
   Widget _buildSectionCard(
     BuildContext context, {
     required IconData icon,
@@ -515,7 +613,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
   }
 
   Widget _buildRowDivider() {
-    return Divider(height: 1, thickness: 1.5, color: AppColors.outlineVariant);
+    return Divider(height: 1, thickness: 1.5, color: context.palette.outlineVariant);
   }
 
   Widget _buildRowTile(
@@ -549,7 +647,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     ? Icon(
                         Icons.chevron_right_rounded,
                         size: 18,
-                        color: AppColors.onSurfaceVariant,
+                        color: context.palette.onSurfaceVariant,
                       )
                     : const SizedBox.shrink()),
           ],
@@ -558,63 +656,4 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
     );
   }
 
-  Widget _buildPaymentTile(
-    BuildContext context, {
-    required String name,
-    required String account,
-    required bool isDefault,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: isDefault
-                    ? AppColors.primaryContainer
-                    : AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.borderBlack, width: 1.5),
-              ),
-              child: Icon(
-                Icons.account_balance_wallet_rounded,
-                size: 20,
-                color: isDefault
-                    ? AppColors.onPrimaryContainer
-                    : AppColors.onSurface,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: Theme.of(context).textTheme.labelLarge),
-                Text(account, style: Theme.of(context).textTheme.bodySmall),
-              ],
-            ),
-          ],
-        ),
-        if (isDefault)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.secondaryContainer,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.borderBlack, width: 1),
-            ),
-            child: Text(
-              tr('common_utama'),
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: AppColors.onAccent(AppColors.secondaryContainer),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
 }

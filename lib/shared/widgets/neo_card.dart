@@ -25,8 +25,9 @@ class NeoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = backgroundColor ?? AppColors.surfaceContainerLowest;
-    final Color border = borderColor ?? AppColors.borderBlack;
+    final c = context.palette;
+    final Color bg = backgroundColor ?? c.surfaceContainerLowest;
+    final Color border = borderColor ?? c.borderBlack;
     Widget cardContent = Container(
       padding: padding,
       decoration: BoxDecoration(

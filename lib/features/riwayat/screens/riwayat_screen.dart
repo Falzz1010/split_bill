@@ -10,15 +10,18 @@ import '../../../shared/widgets/neo_card.dart';
 import '../../../shared/widgets/neo_chip.dart';
 import '../../../shared/widgets/neo_search_bar.dart';
 import '../../../shared/widgets/neo_confirm_dialog.dart';
+import '../../../shared/widgets/neo_shimmer_skeleton.dart';
 
 class RiwayatScreen extends StatefulWidget {
   final List<SplitBill> splits;
+  final bool isLoading;
   final Function(SplitBill) onSelectSplit;
   final Function(String)? onDeleteSplit;
 
   const RiwayatScreen({
     super.key,
     required this.splits,
+    this.isLoading = false,
     required this.onSelectSplit,
     this.onDeleteSplit,
   });
@@ -40,6 +43,7 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     List<SplitBill> filteredSplits = widget.splits.where((split) {
       if (_selectedTab == 1) return split.isCompleted;
       if (_selectedTab == 2) return !split.isCompleted;
@@ -47,7 +51,7 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
     }).where((split) => split.matches(_searchQuery)).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
@@ -83,12 +87,26 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
 
               // History List
               Expanded(
-                child: filteredSplits.isEmpty
+                child: widget.isLoading
+                    ? ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 100),
+                        itemCount: 4,
+                        itemBuilder: (context, index) => const Padding(
+                          padding: EdgeInsets.only(bottom: 14),
+                          child: NeoShimmerCard(
+                            height: 122,
+                            boxSize: 44,
+                            lines: 3,
+                            trailing: true,
+                          ),
+                        ),
+                      )
+                    : filteredSplits.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.receipt_long_outlined, size: 64, color: AppColors.outline),
+                            Icon(Icons.receipt_long_outlined, size: 64, color: c.outline),
                             const SizedBox(height: 12),
                             Text(
                               _searchQuery.trim().isEmpty
@@ -127,7 +145,7 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              split.category,
+                                              split.displayCategory,
                                               style: Theme.of(context).textTheme.bodySmall,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
@@ -135,7 +153,7 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                                             const SizedBox(height: 2),
                                             Row(
                                               children: [
-                                                Icon(Icons.calendar_today_rounded, size: 12, color: AppColors.outline),
+                                                Icon(Icons.calendar_today_rounded, size: 12, color: c.outline),
                                                 const SizedBox(width: 4),
                                                 Text(
                                                   DateFormatter.formatDate(split.date),
@@ -150,7 +168,7 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                                         children: [
                                           if (widget.onDeleteSplit != null) ...[
                                             IconButton(
-                                              icon: Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
+                                              icon: Icon(Icons.delete_outline_rounded, color: c.error, size: 20),
                                               onPressed: () async {
                                                 final confirmed = await showDeleteConfirmDialog(context, split.title);
                                                 if (!confirmed || !context.mounted) return;
@@ -162,16 +180,16 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                                           ],
                                           NeoChip(
                                             label: split.isCompleted ? tr('his_lunas') : tr('his_menunggu'),
-                                            backgroundColor: split.isCompleted ? AppColors.secondaryContainer : AppColors.errorContainer,
+                                            backgroundColor: split.isCompleted ? c.secondaryContainer : c.errorContainer,
                                             textColor: split.isCompleted
-                                                ? AppColors.onAccent(AppColors.secondaryContainer)
-                                                : AppColors.error,
+                                                ? AppColors.onAccent(c.secondaryContainer)
+                                                : c.error,
                                           ),
                                         ],
                                       ),
                                     ],
                                   ),
-                                  Divider(height: 20, thickness: 1.5, color: AppColors.outlineVariant),
+                                  Divider(height: 20, thickness: 1.5, color: c.outlineVariant),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
@@ -189,10 +207,10 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                                               height: 32,
                                               decoration: BoxDecoration(
                                                 shape: BoxShape.circle,
-                                                color: AppColors.surfaceContainerHighest,
-                                                border: Border.all(color: AppColors.borderBlack, width: 1.5),
+                                                color: c.surfaceContainerHighest,
+                                                border: Border.all(color: c.borderBlack, width: 1.5),
                                               ),
-                                              child: Icon(Icons.group_rounded, size: 16, color: AppColors.outline),
+                                              child: Icon(Icons.group_rounded, size: 16, color: c.outline),
                                             ),
                                           if (split.members.length > 3)
                                             Container(
@@ -200,13 +218,13 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                                               height: 32,
                                               decoration: BoxDecoration(
                                                 shape: BoxShape.circle,
-                                                color: AppColors.surfaceContainerHighest,
-                                                border: Border.all(color: AppColors.borderBlack, width: 1.5),
+                                                color: c.surfaceContainerHighest,
+                                                border: Border.all(color: c.borderBlack, width: 1.5),
                                               ),
                                               child: Center(
                                                 child: Text(
                                                   '+${split.members.length - 3}',
-                                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.onSurface),
+                                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: c.onSurface),
                                                 ),
                                               ),
                                             ),
@@ -215,7 +233,7 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                                       Text(
                                         formatCurrency(split.totalAmount),
                                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                              color: AppColors.primary,
+                                              color: c.primary,
                                               fontSize: 16,
                                             ),
                                       ),
@@ -237,18 +255,19 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
 
   Widget _buildTabChip(String label, {required int index}) {
     final isSelected = _selectedTab == index;
+    final c = context.palette;
     return GestureDetector(
       onTap: () => setState(() => _selectedTab = index),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryContainer : AppColors.surfaceContainerLowest,
+          color: isSelected ? c.primaryContainer : c.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.borderBlack, width: 2),
+          border: Border.all(color: c.borderBlack, width: 2),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.borderBlack,
+                    color: c.borderBlack,
                     offset: Offset(2, 2),
                     blurRadius: 0,
                   ),
@@ -260,7 +279,7 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
           style: TextStyle(
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             fontSize: 12,
-            color: isSelected ? AppColors.onPrimaryContainer : AppColors.onSurfaceVariant,
+            color: isSelected ? c.onPrimaryContainer : c.onSurfaceVariant,
           ),
         ),
       ),

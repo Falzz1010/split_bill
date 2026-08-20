@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/settings/settings_service.dart';
 import '../../../core/utils/app_l10n.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/neo_paw_logo.dart';
 import '../../../main_navigation.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -95,8 +96,9 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -126,28 +128,21 @@ class _SplashScreenState extends State<SplashScreen>
                         child: Transform.rotate(
                           angle: _logoRotate.value * math.pi,
                           child: Transform.scale(
-                            scale: 0.3 + _logo.value * 0.7,
-                            child: Container(
+                            scale: 0.3 + _logo.value * 0.7,                              child: Container(
                               width: 112,
                               height: 112,
                               decoration: BoxDecoration(
-                                color: AppColors.primaryContainer,
+                                color: c.primaryContainer,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: AppColors.borderBlack, width: AppColors.borderWidth),
+                                border: Border.all(color: c.borderBlack, width: AppColors.borderWidth),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.borderBlack,
+                                    color: c.borderBlack,
                                     offset: Offset(4, 4),
                                   ),
                                 ],
                               ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.receipt_long_rounded,
-                                  size: 52,
-                                  color: AppColors.borderBlack,
-                                ),
-                              ),
+                            child: NeoPawLogo(size: 112),
                             ),
                           ),
                         ),
@@ -166,12 +161,12 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceContainerLowest,
+                              color: c.surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: AppColors.borderBlack, width: AppColors.borderWidth),
+                              border: Border.all(color: c.borderBlack, width: AppColors.borderWidth),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.borderBlack,
+                                  color: c.borderBlack,
                                   offset: Offset(3.5, 3.5),
                                 ),
                               ],
@@ -180,7 +175,13 @@ class _SplashScreenState extends State<SplashScreen>
                               width: 148,
                               height: 148,
                               child: CustomPaint(
-                                painter: QrPainter(bars: bars, scan: scan),
+                                painter: QrPainter(
+                                  bars: bars,
+                                  scan: scan,
+                                  borderColor: c.borderBlack,
+                                  cardColor: c.surfaceContainerLowest,
+                                  scanColor: c.primary,
+                                ),
                               ),
                             ),
                           ),
@@ -194,8 +195,8 @@ class _SplashScreenState extends State<SplashScreen>
                       opacity: _title.value.clamp(0, 1),
                       child: Transform.translate(
                         offset: Offset(0, (1 - _title.value) * 24),
-                        child: Text(
-                          'FairSplit',
+                        child:                         Text(
+                          'Neobill',
                           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                                 fontSize: 34,
                                 fontWeight: FontWeight.w900,
@@ -214,14 +215,14 @@ class _SplashScreenState extends State<SplashScreen>
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
-                            color: AppColors.secondaryContainer,
+                            color: c.secondaryContainer,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.borderBlack, width: 2),
+                            border: Border.all(color: c.borderBlack, width: 2),
                           ),
                           child: Text(
                             tr('splash_tagline'),
                             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                  color: AppColors.onAccent(AppColors.secondaryContainer),
+                                  color: AppColors.onAccent(c.secondaryContainer),
                                   fontWeight: FontWeight.w800,
                                 ),
                           ),
@@ -240,11 +241,11 @@ class _SplashScreenState extends State<SplashScreen>
                             width: 230,
                             height: 18,
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceContainerLowest,
-                              border: Border.all(color: AppColors.borderBlack, width: 2.5),
+                              color: c.surfaceContainerLowest,
+                              border: Border.all(color: c.borderBlack, width: 2.5),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.borderBlack,
+                                  color: c.borderBlack,
                                   offset: Offset(3, 3),
                                 ),
                               ],
@@ -254,7 +255,7 @@ class _SplashScreenState extends State<SplashScreen>
                               child: FractionallySizedBox(
                                 widthFactor: ((_controller.value - 0.55) / 0.45).clamp(0.0, 1.0),
                                 heightFactor: 1,
-                                child: Container(color: AppColors.primaryContainer),
+                                child: Container(color: c.primaryContainer),
                               ),
                             ),
                           ),
@@ -280,7 +281,7 @@ class _SplashScreenState extends State<SplashScreen>
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.onSurfaceVariant,
+                          color: c.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -301,8 +302,17 @@ class _SplashScreenState extends State<SplashScreen>
 class QrPainter extends CustomPainter {
   final double bars;
   final double scan;
+  final Color borderColor;
+  final Color cardColor;
+  final Color scanColor;
 
-  const QrPainter({required this.bars, required this.scan});
+  const QrPainter({
+    required this.bars,
+    required this.scan,
+    required this.borderColor,
+    required this.cardColor,
+    required this.scanColor,
+  });
 
   static const int grid = 11;
 
@@ -318,8 +328,8 @@ class QrPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final black = Paint()..color = AppColors.borderBlack;
-    final card = Paint()..color = AppColors.surfaceContainerLowest;
+    final black = Paint()..color = borderColor;
+    final card = Paint()..color = cardColor;
     final m = size.width / grid;
     final ox = (size.width - m * grid) / 2;
     final oy = (size.height - m * grid) / 2;
@@ -359,10 +369,10 @@ class QrPainter extends CustomPainter {
     if (bars >= 1.0) {
       final scanY = oy + scan * (m * grid);
       final glow = Paint()
-        ..color = AppColors.primary.withAlpha(60)
+        ..color = scanColor.withAlpha(60)
         ..strokeWidth = 9;
       final line = Paint()
-        ..color = AppColors.primary
+        ..color = scanColor
         ..strokeWidth = 2.5;
       canvas.drawLine(Offset(ox, scanY), Offset(ox + m * grid, scanY), glow);
       canvas.drawLine(Offset(ox, scanY), Offset(ox + m * grid, scanY), line);

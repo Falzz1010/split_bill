@@ -424,5 +424,37 @@ Terima kasih, s ampai jumpa!
       expect(r.items.length, 0);
       expect(r.subtotal, 0);
     });
+
+    test('foreign currency USD: harga desimal diparse dengan benar', () {
+      const raw = '''
+Starbucks Coffee
+US\$ 12.50
+Caramel Latte
+\$ 6.25
+Sub Total \$ 18.75
+Tax \$ 1.50
+Total \$ 20.25
+''';
+      final r = ReceiptParser.parseText(raw, currency: 'USD');
+      expect(r.items.length, 2);
+      expect(r.items[0].price, 12.5);
+      expect(r.items[1].price, 6.25);
+      expect(r.subtotal, 18.75);
+      expect(r.totalAmount, 20.25);
+    });
+
+    test('foreign currency JPY: titik/koma adalah ribuan, bukan desimal', () {
+      const raw = '''
+FamilyMart
+1,200
+¥ 1,200
+2,400
+''';
+      final r = ReceiptParser.parseText(raw, currency: 'JPY');
+      expect(r.items.length, greaterThan(0));
+      expect(r.items[0].price, 1200);
+      // tanpa label total → total = subtotal item
+      expect(r.totalAmount, r.subtotal);
+    });
   });
 }

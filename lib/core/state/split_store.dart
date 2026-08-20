@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import '../database/local_database_service.dart';
 import '../models/split_model.dart';
@@ -12,8 +14,17 @@ class SplitStore extends ChangeNotifier {
 
   List<SplitBill> _splits = [];
   SplitBill? _selected;
+  bool _isLoading = true;
+
+  /// Antrian penulisan ke disk: operasi save dijalankan berurutan sehingga
+  /// dua mutasi beruntun tidak bisa menimpa hasil satu sama lain (penulisan
+  /// selalu memakai state terbaru).
+  Future<void> _pendingSave = Future.value();
 
   List<SplitBill> get splits => List.unmodifiable(_splits);
+
+  /// True selama data awal belum selesai dimuat — layar menampilkan skeleton.
+  bool get isLoading => _isLoading;
 
   /// Split yang sedang disorot (Featured di Dashboard / dibuka di Editor).
   SplitBill? get selected => _selected;
@@ -27,37 +38,52 @@ class SplitStore extends ChangeNotifier {
   }
 
   Future<void> load() async {
+    // Durasi minimum shimmer agar skeleton terlihat jelas & tak berkedip
+    // saat disk sangat cepat; pembacaan disk tetap berjalan paralel.
+    // ponytail: delay tampilan — naikkan/turunkan sesuai rasa loading.
+    final minShimmer = Future<void>.delayed(const Duration(milliseconds: 1500));
     _splits = await LocalDatabaseService.instance.loadSplits();
+    await minShimmer;
     _selected = _splits.isNotEmpty ? _splits.first : null;
+    _isLoading = false;
     notifyListeners();
   }
 
   Future<void> add(SplitBill split) async {
-    _splits = await LocalDatabaseService.instance.addSplit(split);
+    _splits.insert(0, split);
     _selected = split;
     notifyListeners();
+    await _persist();
   }
 
   /// Simpan perubahan split. Split yang sudah lunas tidak lagi dipilih
   /// sebagai summary — panggil [select] dengan null setelahnya bila perlu.
   Future<void> update(SplitBill split) async {
-    _splits = await LocalDatabaseService.instance.updateSplit(split);
+    final index = _splits.indexWhere((s) => s.id == split.id);
+    if (index != -1) {
+      _splits[index] = split;
+    } else {
+      _splits.insert(0, split);
+    }
     _selected = split;
     notifyListeners();
+    await _persist();
   }
 
   Future<void> delete(String id) async {
-    _splits = await LocalDatabaseService.instance.deleteSplit(id);
+    _splits.removeWhere((s) => s.id == id);
     if (_selected?.id == id) {
       _selected = _splits.isNotEmpty ? _splits.first : null;
     }
     notifyListeners();
+    await _persist();
   }
 
   Future<void> clearAll() async {
-    _splits = await LocalDatabaseService.instance.clearAllData();
+    _splits = [];
     _selected = null;
     notifyListeners();
+    await _persist();
   }
 
   Future<void> loadDemo() async {
@@ -69,5 +95,17 @@ class SplitStore extends ChangeNotifier {
   void select(SplitBill? split) {
     _selected = split;
     notifyListeners();
+  }
+
+  /// Serialisasi penulisan: setiap save memakai daftar [splits] terbaru dan
+  /// antre di belakang penulisan sebelumnya.
+  Future<void> _persist() {
+    final completer = Completer<void>();
+    _pendingSave = _pendingSave
+        .then((_) async {
+          await LocalDatabaseService.instance.saveSplits(_splits);
+        })
+        .whenComplete(completer.complete);
+    return completer.future;
   }
 }

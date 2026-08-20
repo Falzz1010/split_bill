@@ -89,6 +89,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final c = context.palette;
         return NeoBottomSheet(
           padding: const EdgeInsets.all(24),
           child: SingleChildScrollView(
@@ -112,14 +113,14 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: AppColors.borderBlack,
+                        color: c.borderBlack,
                         width: 2,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: AppColors.secondary,
+                        color: c.secondary,
                         width: 2.5,
                       ),
                     ),
@@ -145,13 +146,13 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                     }
                   },
                   width: double.infinity,
-                  backgroundColor: AppColors.primaryContainer,
+                  backgroundColor: c.primaryContainer,
                   child: Text(
                     tr('edit_save_member'),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: AppColors.onPrimaryContainer,
+                      color: c.onPrimaryContainer,
                     ),
                   ),
                 ),
@@ -173,6 +174,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final c = context.palette;
         return NeoBottomSheet(
           padding: const EdgeInsets.all(24),
           child: SingleChildScrollView(
@@ -201,7 +203,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: AppColors.borderBlack,
+                        color: c.borderBlack,
                         width: 2,
                       ),
                     ),
@@ -227,7 +229,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: AppColors.borderBlack,
+                        color: c.borderBlack,
                         width: 2,
                       ),
                     ),
@@ -261,23 +263,23 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                       Navigator.pop(context);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            tr('edit_invalid_input'),
-                            style: TextStyle(color: AppColors.background),
-                          ),
-                          backgroundColor: AppColors.error,
+                  SnackBar(
+                    content: Text(
+                      tr('edit_invalid_input'),
+                      style: TextStyle(color: c.background),
+                    ),
+                    backgroundColor: c.error,
                         ),
                       );
                     }
                   },
                   width: double.infinity,
-                  backgroundColor: AppColors.primaryContainer,
+                  backgroundColor: c.primaryContainer,
                   child: Text(
                     tr('edit_save_item'),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.onPrimaryContainer,
+                      color: c.onPrimaryContainer,
                     ),
                   ),
                 ),
@@ -301,6 +303,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final c = context.palette;
         return NeoBottomSheet(
           padding: const EdgeInsets.all(24),
           child: SingleChildScrollView(
@@ -327,7 +330,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: AppColors.borderBlack,
+                        color: c.borderBlack,
                         width: 2,
                       ),
                     ),
@@ -352,7 +355,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: AppColors.borderBlack,
+                        color: c.borderBlack,
                         width: 2,
                       ),
                     ),
@@ -368,13 +371,12 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                             _items.removeWhere((i) => i.id == item.id);
                           });
                           Navigator.pop(context);
-                        },
-                        backgroundColor: AppColors.errorContainer,
+                        },                          backgroundColor: c.errorContainer,
                         child: Text(
                           tr('edit_delete_item'),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.error,
+                            color: c.error,
                           ),
                         ),
                       ),
@@ -410,12 +412,12 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                             Navigator.pop(context);
                           }
                         },
-                        backgroundColor: AppColors.primaryContainer,
+                        backgroundColor: c.primaryContainer,
                         child: Text(
                           tr('edit_save_changes'),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.onPrimaryContainer,
+                            color: c.onPrimaryContainer,
                           ),
                         ),
                       ),
@@ -432,8 +434,9 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
         child: SafeArea(
@@ -448,14 +451,14 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLowest,
+                      color: c.surfaceContainerLowest,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.borderBlack,
+                        color: c.borderBlack,
                         width: 2,
                       ),
                     ),
-                    child: Icon(Icons.arrow_back, color: AppColors.onSurface),
+                    child: Icon(Icons.arrow_back, color: c.onSurface),
                   ),
                 ),
                 Column(
@@ -485,7 +488,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                               'ring_deleted',
                             ).replaceAll('{title}', widget.splitBill.title),
                           ),
-                          backgroundColor: AppColors.borderBlack,
+                          backgroundColor: c.borderBlack,
                         ),
                       );
                     },
@@ -493,17 +496,17 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: AppColors.errorContainer,
+                        color: c.errorContainer,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppColors.borderBlack,
+                          color: c.borderBlack,
                           width: 2,
                         ),
                       ),
                       child: Icon(
                         Icons.delete_outline_rounded,
                         size: 20,
-                        color: AppColors.error,
+                        color: c.error,
                       ),
                     ),
                   )
@@ -537,9 +540,9 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                         child: NeoChip(
                           label: tr('edit_add_friend'),
                           icon: Icons.person_add_alt_1_rounded,
-                          backgroundColor: AppColors.secondaryContainer,
+                          backgroundColor: c.secondaryContainer,
                           textColor: AppColors.onAccent(
-                            AppColors.secondaryContainer,
+                            c.secondaryContainer,
                           ),
                         ),
                       ),
@@ -560,12 +563,11 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
+                            ),                              decoration: BoxDecoration(
                               color: _memberColor(m),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: AppColors.borderBlack,
+                                color: c.borderBlack,
                                 width: 1.5,
                               ),
                             ),
@@ -574,13 +576,13 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                                 CircleAvatar(
                                   radius: 10,
                                   backgroundColor:
-                                      AppColors.surfaceContainerLowest,
+                                      c.surfaceContainerLowest,
                                   child: Text(
                                     m.name[0],
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.onSurface,
+                                      color: c.onSurface,
                                     ),
                                   ),
                                 ),
@@ -616,8 +618,8 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                         onTap: _showAddItemBottomSheet,
                         child: NeoChip(
                           label: tr('edit_add_item_label'),
-                          backgroundColor: AppColors.primaryContainer,
-                          textColor: AppColors.onPrimaryContainer,
+                          backgroundColor: c.primaryContainer,
+                          textColor: c.onPrimaryContainer,
                         ),
                       ),
                     ],
@@ -659,7 +661,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                                       style: Theme.of(context)
                                           .textTheme
                                           .labelLarge
-                                          ?.copyWith(color: AppColors.primary),
+                                          ?.copyWith(color: c.primary),
                                     ),
                                     const SizedBox(width: 8),
                                     GestureDetector(
@@ -673,17 +675,17 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
                                         decoration: BoxDecoration(
-                                          color: AppColors.errorContainer,
+                                          color: c.errorContainer,
                                           shape: BoxShape.circle,
                                           border: Border.all(
-                                            color: AppColors.borderBlack,
+                                            color: c.borderBlack,
                                             width: 1,
                                           ),
                                         ),
                                         child: Icon(
                                           Icons.delete_outline_rounded,
                                           size: 16,
-                                          color: AppColors.error,
+                                          color: c.error,
                                         ),
                                       ),
                                     ),
@@ -706,11 +708,11 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primaryContainer
+                                      color: c.primaryContainer
                                           .withAlpha(120),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: AppColors.borderBlack,
+                                        color: c.borderBlack,
                                         width: 1,
                                       ),
                                     ),
@@ -729,7 +731,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                                         Icon(
                                           Icons.edit_rounded,
                                           size: 13,
-                                          color: AppColors.onPrimaryContainer,
+                                          color: c.onPrimaryContainer,
                                         ),
                                       ],
                                     ),
@@ -737,10 +739,10 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                                 ),
                                 Container(
                                   decoration: BoxDecoration(
-                                    color: AppColors.surfaceContainerLow,
+                                    color: c.surfaceContainerLow,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: AppColors.borderBlack,
+                                      color: c.borderBlack,
                                       width: 1.5,
                                     ),
                                   ),
@@ -793,7 +795,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                             Divider(
                               height: 18,
                               thickness: 1,
-                              color: AppColors.outlineVariant,
+                              color: c.outlineVariant,
                             ),
 
                             // Interactive Member Assignment Chips
@@ -815,12 +817,12 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                                     decoration: BoxDecoration(
                                       color: isAssigned
                                           ? _memberColor(m)
-                                          : AppColors.surfaceContainerLowest,
+                                          : c.surfaceContainerLowest,
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
                                         color: isAssigned
-                                            ? AppColors.borderBlack
-                                            : AppColors.outlineVariant,
+                                            ? c.borderBlack
+                                            : c.outlineVariant,
                                         width: isAssigned ? 2.0 : 1.0,
                                       ),
                                     ),
@@ -834,7 +836,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                                           size: 14,
                                           color: isAssigned
                                               ? Colors.black
-                                              : AppColors.outline,
+                                              : c.outline,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
@@ -846,7 +848,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                                                 : FontWeight.normal,
                                             color: isAssigned
                                                 ? Colors.black
-                                                : AppColors.onSurfaceVariant,
+                                                : c.onSurfaceVariant,
                                           ),
                                         ),
                                       ],
@@ -864,7 +866,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
 
                   // Tax & Service Controls
                   NeoCard(
-                    backgroundColor: AppColors.surfaceContainerHigh,
+                    backgroundColor: c.surfaceContainerHigh,
                     child: Column(
                       children: [
                         Row(
@@ -876,8 +878,8 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                             ),
                             Switch.adaptive(
                               value: _includeTax,
-                              activeTrackColor: AppColors.secondaryContainer,
-                              activeThumbColor: AppColors.secondary,
+                              activeTrackColor: c.secondaryContainer,
+                              activeThumbColor: c.secondary,
                               onChanged: (v) => setState(() => _includeTax = v),
                             ),
                           ],
@@ -885,7 +887,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                         Divider(
                           height: 12,
                           thickness: 1,
-                          color: AppColors.outlineVariant,
+                          color: c.outlineVariant,
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -896,8 +898,8 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                             ),
                             Switch.adaptive(
                               value: _includeService,
-                              activeTrackColor: AppColors.secondaryContainer,
-                              activeThumbColor: AppColors.secondary,
+                              activeTrackColor: c.secondaryContainer,
+                              activeThumbColor: c.secondary,
                               onChanged: (v) =>
                                   setState(() => _includeService = v),
                             ),
@@ -916,10 +918,10 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLowest,
+              color: c.surfaceContainerLowest,
               border: Border(
                 top: BorderSide(
-                  color: AppColors.borderBlack,
+                  color: c.borderBlack,
                   width: AppColors.borderWidth,
                 ),
               ),
@@ -947,12 +949,9 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                   final updatedSplit = SplitBill(
                     id: widget.splitBill.id,
                     title: widget.splitBill.title,
-                    // Prefix "N Anggota • " disegarkan agar sesuai jumlah anggota
-                    // saat ini (konvensi data yang di-parse dashboard).
-                    category: categoryWithMemberCount(
-                      widget.splitBill.category,
-                      _members.length,
-                    ),
+                    // Kategori selalu disimpan polos; prefix jumlah anggota
+                    // hanya ditambahkan saat ditampilkan (displayCategory).
+                    category: categoryLabelOf(widget.splitBill.category),
                     date: widget.splitBill.date,
                     subtotal: subtotal,
                     tax: totals.tax,
@@ -966,7 +965,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                   widget.onSaveAndContinue(updatedSplit);
                 },
                 width: double.infinity,
-                backgroundColor: AppColors.primaryContainer,
+                backgroundColor: c.primaryContainer,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -975,13 +974,13 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
-                        color: AppColors.onPrimaryContainer,
+                        color: c.onPrimaryContainer,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Icon(
                       Icons.arrow_forward_rounded,
-                      color: AppColors.onPrimaryContainer,
+                      color: c.onPrimaryContainer,
                       size: 20,
                     ),
                   ],

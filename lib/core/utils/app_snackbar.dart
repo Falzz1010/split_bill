@@ -9,10 +9,11 @@ void showNeoSnack(
   bool isError = false,
   Duration duration = const Duration(seconds: 2),
 }) {
+  final c = context.palette;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: Text(message, style: TextStyle(color: AppColors.background)),
-      backgroundColor: isError ? AppColors.error : AppColors.onSurface,
+      content: Text(message, style: TextStyle(color: c.background)),
+      backgroundColor: isError ? c.error : c.onSurface,
       duration: duration,
     ),
   );

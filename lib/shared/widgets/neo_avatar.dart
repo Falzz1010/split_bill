@@ -21,6 +21,7 @@ class NeoAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     final color = AppColors.fromHex(member.accentColorHex);
     final initial = member.name.trim().isEmpty ? '?' : member.name.trim()[0].toUpperCase();
     return Container(
@@ -30,7 +31,7 @@ class NeoAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: bordered ? Border.all(color: AppColors.borderBlack, width: 2) : null,
+        border: bordered ? Border.all(color: c.borderBlack, width: 2) : null,
       ),
       child: Text(
         initial,

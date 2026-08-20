@@ -3,6 +3,7 @@ import '../../../core/utils/app_l10n.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/split_model.dart';
+import '../../../core/utils/category_guesser.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../shared/widgets/neo_avatar.dart';
 import '../../../shared/widgets/neo_bottom_sheet.dart';
@@ -30,9 +31,15 @@ class CreateSplitDialog extends StatefulWidget {
 class _CreateSplitDialogState extends State<CreateSplitDialog> {
   final _titleController = TextEditingController();
   late final _categoryController = TextEditingController(
-    text: widget.initialCategory ?? 'Resto & Cafe',
+    text: widget.initialCategory ??
+        guessCategory(widget.initialTitle) ??
+        'Resto & Cafe',
   );
   final _memberNameController = TextEditingController();
+
+  /// Kategori otomatis hanya berjalan selama user belum menyentuh field
+  /// kategori secara manual — setelah itu kehendak user yang menang.
+  bool _categoryTouched = false;
 
   final _itemNameController = TextEditingController();
   final _itemPriceController = TextEditingController();
@@ -66,6 +73,16 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
     super.initState();
     if (widget.initialTitle != null && widget.initialTitle!.trim().isNotEmpty) {
       _titleController.text = widget.initialTitle!.trim();
+    }
+  }
+
+  /// Tebak kategori dari judul struk saat user mengetik, selama field
+  /// kategori belum diedit manual.
+  void _onTitleChanged(String value) {
+    if (_categoryTouched) return;
+    final guessed = guessCategory(value);
+    if (guessed != null && _categoryController.text != guessed) {
+      _categoryController.text = guessed;
     }
   }
 
@@ -155,10 +172,7 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
       SplitBill(
         id: 'split_${DateTime.now().millisecondsSinceEpoch}',
         title: title,
-        category: categoryWithMemberCount(
-          _categoryController.text.trim(),
-          _members.length,
-        ),
+        category: categoryLabelOf(_categoryController.text.trim()),
         date: DateTime.now(),
         subtotal: subtotal,
         tax: totals.tax,
@@ -216,7 +230,9 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                   const SizedBox(height: 6),
                   TextField(
                     controller: _titleController,
+                    onChanged: _onTitleChanged,
                     decoration: neoInputDecoration(
+                      context,
                       hintText: tr('create_name_hint'),
                     ),
                   ),
@@ -230,7 +246,9 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                   const SizedBox(height: 6),
                   TextField(
                     controller: _categoryController,
+                    onChanged: (_) => _categoryTouched = true,
                     decoration: neoInputDecoration(
+                      context,
                       hintText: tr('create_category_hint'),
                     ),
                   ),
@@ -248,6 +266,7 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                         child: TextField(
                           controller: _memberNameController,
                           decoration: neoInputDecoration(
+                            context,
                             hintText: tr('create_member_hint'),
                           ),
                         ),
@@ -255,7 +274,7 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                       const SizedBox(width: 8),
                       NeoButton(
                         onTap: _addMember,
-                        backgroundColor: AppColors.secondaryContainer,
+                        backgroundColor: context.palette.secondaryContainer,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 12,
@@ -265,7 +284,7 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: AppColors.onAccent(
-                              AppColors.secondaryContainer,
+                              context.palette.secondaryContainer,
                             ),
                           ),
                         ),
@@ -294,11 +313,11 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                             ? const Icon(Icons.close, size: 16)
                             : null,
                         onDeleted: idx > 0 ? () => _removeMember(idx) : null,
-                        backgroundColor: AppColors.surfaceContainerLowest,
+                        backgroundColor: context.palette.surfaceContainerLowest,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                           side: BorderSide(
-                            color: AppColors.borderBlack,
+                            color: context.palette.borderBlack,
                             width: 1.5,
                           ),
                         ),
@@ -320,6 +339,7 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                         child: TextField(
                           controller: _itemNameController,
                           decoration: neoInputDecoration(
+                            context,
                             hintText: tr('create_item_name'),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 14,
@@ -335,6 +355,7 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                           controller: _itemPriceController,
                           keyboardType: TextInputType.number,
                           decoration: neoInputDecoration(
+                            context,
                             hintText: tr('create_item_price'),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 14,
@@ -346,14 +367,14 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                       const SizedBox(width: 6),
                       NeoButton(
                         onTap: _addItem,
-                        backgroundColor: AppColors.primaryContainer,
+                        backgroundColor: context.palette.primaryContainer,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 12,
                         ),
                         child: Icon(
                           Icons.add,
-                          color: AppColors.onPrimaryContainer,
+                          color: context.palette.onPrimaryContainer,
                         ),
                       ),
                     ],
@@ -366,15 +387,15 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                       padding: const EdgeInsets.all(12),
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLow,
+                        color: context.palette.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.outlineVariant),
+                        border: Border.all(color: context.palette.outlineVariant),
                       ),
                       child: Text(
                         tr('create_no_items'),
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.onSurfaceVariant,
+                          color: context.palette.onSurfaceVariant,
                         ),
                       ),
                     )
@@ -391,10 +412,10 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceContainerLowest,
+                              color: context.palette.surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: AppColors.borderBlack,
+                                color: context.palette.borderBlack,
                                 width: 1.5,
                               ),
                             ),
@@ -415,7 +436,7 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                                       formatCurrency(item.price),
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.primary,
+                                        color: context.palette.primary,
                                       ),
                                     ),
                                     const SizedBox(width: 8),
@@ -424,7 +445,7 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                                       child: Icon(
                                         Icons.delete_outline,
                                         size: 18,
-                                        color: AppColors.error,
+                                        color: context.palette.error,
                                       ),
                                     ),
                                   ],
@@ -444,10 +465,10 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.secondaryContainer.withAlpha(70),
+                        color: context.palette.secondaryContainer.withAlpha(70),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.borderBlack,
+                          color: context.palette.borderBlack,
                           width: 1.5,
                         ),
                       ),
@@ -469,7 +490,7 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                             ),
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
+                              color: context.palette.primary,
                               fontSize: 14,
                             ),
                           ),
@@ -487,14 +508,14 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
           NeoButton(
             onTap: _submit,
             width: double.infinity,
-            backgroundColor: AppColors.primaryContainer,
+            backgroundColor: context.palette.primaryContainer,
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.flash_on_rounded,
-                  color: AppColors.onPrimaryContainer,
+                  color: context.palette.onPrimaryContainer,
                   size: 20,
                 ),
                 const SizedBox(width: 6),
@@ -503,7 +524,7 @@ class _CreateSplitDialogState extends State<CreateSplitDialog> {
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
-                    color: AppColors.onPrimaryContainer,
+                    color: context.palette.onPrimaryContainer,
                   ),
                 ),
               ],

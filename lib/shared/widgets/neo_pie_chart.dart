@@ -28,6 +28,7 @@ class NeoPieChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     final total = sections.fold(0.0, (sum, item) => sum + item.value);
 
     return NeoCard(
@@ -52,16 +53,16 @@ class NeoPieChart extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
+                  color: c.primaryContainer,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.borderBlack, width: 1.5),
+                  border: Border.all(color: c.borderBlack, width: 1.5),
                 ),
                 child: Text(
                   tr('dash_bulan_ini'),
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.onPrimaryContainer,
+                    color: c.onPrimaryContainer,
                   ),
                 ),
               ),
@@ -71,13 +72,17 @@ class NeoPieChart extends StatelessWidget {
           Row(
             children: [
               // Custom Painted Pie Chart
-              SizedBox(
-                width: 110,
-                height: 110,
-                child: CustomPaint(
-                  painter: _NeoPieChartPainter(
-                    sections: sections,
-                    total: total,
+              RepaintBoundary(
+                child: SizedBox(
+                  width: 110,
+                  height: 110,
+                  child: CustomPaint(
+                    painter: _NeoPieChartPainter(
+                      sections: sections,
+                      total: total,
+                      borderColor: c.borderBlack,
+                      holeColor: c.surfaceContainerLowest,
+                    ),
                   ),
                 ),
               ),
@@ -101,7 +106,7 @@ class NeoPieChart extends StatelessWidget {
                               color: section.color,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppColors.borderBlack,
+                                color: c.borderBlack,
                                 width: 1.5,
                               ),
                             ),
@@ -121,10 +126,10 @@ class NeoPieChart extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceContainerHigh,
+                              color: c.surfaceContainerHigh,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: AppColors.borderBlack,
+                                color: c.borderBlack,
                                 width: 1,
                               ),
                             ),
@@ -153,8 +158,15 @@ class NeoPieChart extends StatelessWidget {
 class _NeoPieChartPainter extends CustomPainter {
   final List<PieChartDataSection> sections;
   final double total;
+  final Color borderColor;
+  final Color holeColor;
 
-  _NeoPieChartPainter({required this.sections, required this.total});
+  _NeoPieChartPainter({
+    required this.sections,
+    required this.total,
+    required this.borderColor,
+    required this.holeColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -167,7 +179,7 @@ class _NeoPieChartPainter extends CustomPainter {
     final paintStroke = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5
-      ..color = AppColors.borderBlack;
+      ..color = borderColor;
 
     for (var section in sections) {
       final sweepAngle = (section.value / total) * 2 * pi;
@@ -200,11 +212,22 @@ class _NeoPieChartPainter extends CustomPainter {
     final innerRadius = radius * 0.45;
     final holePaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = AppColors.surfaceContainerLowest;
+      ..color = holeColor;
     canvas.drawCircle(center, innerRadius, holePaint);
     canvas.drawCircle(center, innerRadius, paintStroke);
   }
 
   @override
-  bool shouldRepaint(covariant _NeoPieChartPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _NeoPieChartPainter oldDelegate) {
+    if (oldDelegate.total != total || oldDelegate.sections.length != sections.length) {
+      return true;
+    }
+    for (var i = 0; i < sections.length; i++) {
+      if (oldDelegate.sections[i].value != sections[i].value ||
+          oldDelegate.sections[i].color != sections[i].color) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

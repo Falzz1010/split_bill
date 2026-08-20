@@ -15,10 +15,10 @@ const Map<String, String> _id = {
   'nav_settings': 'Settings',
 
   // Dashboard
+  'dash_title': 'Neobill',
   'dash_greeting_morning': 'Selamat Pagi',
   'dash_greeting_afternoon': 'Selamat Siang',
   'dash_greeting_evening': 'Selamat Malam',
-  'dash_greeting_name': 'Marko',
   'dash_total': 'Total',
   'dash_status': 'Proporsional',
   'dash_noresult_desc': 'Coba gunakan kata kunci lain atau cek ejaannya.',
@@ -35,6 +35,7 @@ const Map<String, String> _id = {
   'dash_category_chart': 'Kategori Pengeluaran (Real-Time)',
   'dash_trend_chart': 'Tren Split Bill (Real-Time)',
   'dash_empty_all': 'Belum Ada Struk Belanja',
+  'dash_no_line_data': 'Belum ada pengeluaran dalam 6 bulan terakhir',
   'dash_not_found': 'Tidak Ditemukan',
   'dash_lihat_edit': 'Lihat & Edit Rincian Split',
   'dash_group': 'Group',
@@ -152,6 +153,7 @@ const Map<String, String> _id = {
   'ocr_preview_add_item': 'Tambah Item',
   'ocr_preview_edit_item': 'Edit Item',
   'ocr_preview_continue': 'Lanjutkan',
+  'ocr_preview_foreign_currency': 'Struk dalam {code} — dikonversi ke IDR saat disimpan',
   'ocr_preview_image': 'Gambar Hasil Scan',
   'ocr_preview_image_tap': 'Ketuk untuk perbesar',
 
@@ -163,9 +165,6 @@ const Map<String, String> _id = {
   'set_currency': 'Mata Uang',
   'set_language': 'Bahasa',
   'set_dark': 'Mode Gelap',
-  'set_notif': 'Notifikasi',
-  'set_notif_push': 'Push Notifications',
-  'set_notif_email': 'Email Reminders',
   'set_db': 'Manajemen Database & Data Real-Time',
   'set_db_clear': 'Gunakan Database Kosong (Bersih)',
   'set_db_clear_desc': 'Hapus struk contoh & mulai catat data asli Anda',
@@ -174,14 +173,26 @@ const Map<String, String> _id = {
   'set_db_cleared':
       'Database telah dibersihkan! Aplikasi kini menggunakan 0 data dummy.',
   'set_db_loaded': 'Data struk contoh demo berhasil dimuat ulang!',
-  'set_wallet': 'Rekening & E-Wallet Saya',
   'set_help': 'Bantuan & Tentang',
   'set_tutorial': 'Lihat Tutorial',
   'set_about': 'Tentang Aplikasi',
   'set_pick_currency': 'Pilih Mata Uang',
   'set_pick_language': 'Pilih Bahasa',
+  'set_rates': 'Kurs Mata Uang',
+  'set_rates_desc': 'Kurs asing → IDR, dipakai saat scan struk mata uang asing',
+  'set_rates_base': 'Mata Uang Dasar',
+  'set_rates_refresh': 'Perbarui Kurs Hari Ini',
+  'set_rates_updated': 'Diperbarui {time}',
+  'set_rates_ok': 'Kurs berhasil diperbarui',
+  'set_rates_fail': 'Gagal memperbarui kurs. Cek koneksi internet.',
+  'set_db_clear_confirm_title': 'Bersihkan Semua Data?',
+  'set_db_clear_confirm_desc':
+      'Semua struk belanja akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.',
+  'set_db_load_confirm_title': 'Muat Ulang Data Demo?',
+  'set_db_load_confirm_desc':
+      'Semua struk yang ada akan diganti dengan 3 struk contoh demo.',
+  'set_db_confirm_ok': 'Ya, Lanjutkan',
   'set_version': 'v1.0.0 (Neo-Brutalist Edition)',
-
   // Splash
   'splash_tagline': 'Hitung Cepat, Split Adil ⚡',
   'splash_loading': 'Memuat Data & Pengaturan...',
@@ -209,7 +220,6 @@ const Map<String, String> _id = {
   'common_ok': 'OK',
   'common_batal': 'Batal',
   'common_lunas': 'Lunas',
-  'common_utama': 'Utama',
 };
 
 const Map<String, String> _en = {
@@ -220,10 +230,10 @@ const Map<String, String> _en = {
   'nav_settings': 'Settings',
 
   // Dashboard
+  'dash_title': 'Neobill',
   'dash_greeting_morning': 'Good Morning',
   'dash_greeting_afternoon': 'Good Afternoon',
   'dash_greeting_evening': 'Good Evening',
-  'dash_greeting_name': 'Marko',
   'dash_total': 'Total',
   'dash_status': 'Proportional',
   'dash_noresult_desc': 'Try different keywords or check the spelling.',
@@ -240,6 +250,7 @@ const Map<String, String> _en = {
   'dash_category_chart': 'Spending by Category (Real-Time)',
   'dash_trend_chart': 'Split Bill Trend (Real-Time)',
   'dash_empty_all': 'No Receipts Yet',
+  'dash_no_line_data': 'No spending in the last 6 months',
   'dash_not_found': 'Not Found',
   'dash_lihat_edit': 'View & Edit Split Details',
   'dash_group': 'Group',
@@ -354,6 +365,7 @@ const Map<String, String> _en = {
   'ocr_preview_add_item': 'Add Item',
   'ocr_preview_edit_item': 'Edit Item',
   'ocr_preview_continue': 'Continue',
+  'ocr_preview_foreign_currency': 'Receipt in {code} — converted to IDR when saved',
   'ocr_preview_image': 'Scanned Image',
   'ocr_preview_image_tap': 'Tap to enlarge',
 
@@ -365,9 +377,6 @@ const Map<String, String> _en = {
   'set_currency': 'Currency',
   'set_language': 'Language',
   'set_dark': 'Dark Mode',
-  'set_notif': 'Notifications',
-  'set_notif_push': 'Push Notifications',
-  'set_notif_email': 'Email Reminders',
   'set_db': 'Database & Real-Time Data Management',
   'set_db_clear': 'Use Empty Database (Clean)',
   'set_db_clear_desc': 'Remove sample receipts & start recording your own',
@@ -375,12 +384,25 @@ const Map<String, String> _en = {
   'set_db_load_desc': 'Restore 3 sample receipts for demo purposes',
   'set_db_cleared': 'Database cleared! App now uses 0 dummy data.',
   'set_db_loaded': 'Demo sample receipts loaded successfully!',
-  'set_wallet': 'My Accounts & E-Wallets',
   'set_help': 'Help & About',
   'set_tutorial': 'View Tutorial',
   'set_about': 'About App',
   'set_pick_currency': 'Select Currency',
   'set_pick_language': 'Select Language',
+  'set_rates': 'Exchange Rates',
+  'set_rates_desc': 'Foreign → IDR rates, used when scanning foreign receipts',
+  'set_rates_base': 'Base Currency',
+  'set_rates_refresh': "Refresh Today's Rates",
+  'set_rates_updated': 'Updated {time}',
+  'set_rates_ok': 'Rates updated successfully',
+  'set_rates_fail': 'Failed to update rates. Check internet connection.',
+  'set_db_clear_confirm_title': 'Clear All Data?',
+  'set_db_clear_confirm_desc':
+      'All receipts will be permanently deleted. This cannot be undone.',
+  'set_db_load_confirm_title': 'Reload Demo Data?',
+  'set_db_load_confirm_desc':
+      'All existing receipts will be replaced with 3 sample receipts.',
+  'set_db_confirm_ok': 'Yes, Continue',
   'set_version': 'v1.0.0 (Neo-Brutalist Edition)',
 
   // Splash
@@ -409,5 +431,4 @@ const Map<String, String> _en = {
   'common_ok': 'OK',
   'common_batal': 'Cancel',
   'common_lunas': 'Settled',
-  'common_utama': 'Default',
 };

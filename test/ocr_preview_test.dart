@@ -3,7 +3,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fairsplit/core/utils/receipt_parser.dart';
+import 'package:fairsplit/core/theme/app_colors.dart';
 import 'package:fairsplit/features/ocr_scanner/screens/ocr_result_preview_screen.dart';
+
+import 'helpers/palette_test_wrapper.dart';
 
 void main() {
   Widget buildHarness({
@@ -12,8 +15,8 @@ void main() {
     Uint8List? imageBytes,
   }) {
     final parsed = ReceiptParser.parseText(rawText);
-    return MaterialApp(
-      home: OcrResultPreviewScreen(
+    return wrapWithPalette(
+      OcrResultPreviewScreen(
         rawText: rawText,
         parsed: parsed,
         onConfirm: onConfirm,

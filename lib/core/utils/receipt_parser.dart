@@ -42,6 +42,8 @@ class ReceiptParser {
     // Sufiks rupiah lama: "20.000,-" → "20.000"
     l = l.replaceAll(RegExp(r',-'), '');
     l = l.replaceAll(RegExp(r'Rp\.?\s*', caseSensitive: false), 'Rp');
+    // Simbol mata uang asing di depan harga ("US$ 12.50", "S$ 12.50", "¥ 1.200")
+    l = l.replaceAll(RegExp(r'(?:US\$|S\$|€|¥|\$)\s*', caseSensitive: false), '');
     l = l.replaceAll(RegExp(r'\s+'), ' ').trim();
     return l;
   }
@@ -53,7 +55,15 @@ class ReceiptParser {
   /// yang harus dipasangkan ke nama item di baris sebelumnya.
   static final RegExp _unitQtyNameRegex = RegExp(r'^(\d[\d\.,]*\s*)?[A-Za-z]{2,5}X?$');
 
-  static double _parseAmount(String s) => double.tryParse(s.replaceAll('.', '').replaceAll(',', '')) ?? 0;
+  /// Parse nominal. IDR & JPY: titik/koma = pemisah ribuan ("28.000" → 28000).
+  /// Mata uang asing lain: koma = ribuan, titik = desimal ("12.50" → 12.5,
+  /// "1,234.50" → 1234.5) — sesuai format harga internasional.
+  static double _parseAmount(String s, String currency) {
+    if (currency == 'IDR' || currency == 'JPY') {
+      return double.tryParse(s.replaceAll('.', '').replaceAll(',', '')) ?? 0;
+    }
+    return double.tryParse(s.replaceAll(',', '')) ?? 0;
+  }
 
   /// Nilai OCR palsu (jutaan rupiah dari teks rusak) tidak pernah jadi harga item.
   static const double _maxItemPrice = 1000000;
@@ -136,6 +146,7 @@ class ReceiptParser {
   static (List<String>, List<int>, List<double>, List<int>)? _zipColumnFallback(
     List<String> lines,
     Set<int> consumed,
+    String currency,
   ) {
     var names = <String>[];
     final amounts = <double>[];
@@ -150,7 +161,7 @@ class ReceiptParser {
       if (_isLabelLine(lower)) continue;
       final am = _amountOnlyRegex.firstMatch(l);
       if (am != null) {
-        final price = _parseAmount(am.group(2)!);
+        final price = _parseAmount(am.group(2)!, currency);
         final qty = int.tryParse(am.group(1) ?? '') ?? 1;
         if (am.group(1) != null) qtyPrefixedAmounts++;
         final prevIsAddress = i > 0 && _addressPattern.hasMatch(lines[i - 1]);
@@ -183,7 +194,7 @@ class ReceiptParser {
     return null;
   }
 
-  static ParsedReceiptResult parseText(String rawText) {
+  static ParsedReceiptResult parseText(String rawText, {String currency = 'IDR'}) {
     final lines = rawText
         .split('\n')
         .map(_normalizeLine)
@@ -241,22 +252,22 @@ class ReceiptParser {
 
       // Label nilai: PPN / Service Charge / Sub Total / Total
       if (lower.contains('ppn') || lower.contains('pajak') || lower.contains('tax')) {
-        final v = _extractAmountWithPeek(i, lines, consumed);
+        final v = _extractAmountWithPeek(i, lines, consumed, currency);
         if (v > 0) tax = v;
         continue;
       }
       if (lower.contains('service')) {
-        final v = _extractAmountWithPeek(i, lines, consumed);
+        final v = _extractAmountWithPeek(i, lines, consumed, currency);
         if (v > 0) serviceCharge = v;
         continue;
       }
       if (lower.contains('sub total') || lower.contains('subtotal')) {
-        final v = _extractAmountWithPeek(i, lines, consumed);
+        final v = _extractAmountWithPeek(i, lines, consumed, currency);
         if (v > 0) subtotal = v;
         continue;
       }
       if (lower.contains('total') || lower.contains('jumlah')) {
-        final v = _extractAmountWithPeek(i, lines, consumed);
+        final v = _extractAmountWithPeek(i, lines, consumed, currency);
         if (v > 0) totalAmount = v;
         continue;
       }
@@ -266,7 +277,7 @@ class ReceiptParser {
       final amountMatch = _amountOnlyRegex.firstMatch(line);
       if (amountMatch != null) {
         final qty = int.tryParse(amountMatch.group(1) ?? '') ?? 1;
-        final price = _parseAmount(amountMatch.group(2)!);
+        final price = _parseAmount(amountMatch.group(2)!, currency);
         if (price <= _maxItemPrice) {
           _pairPriceLine(lines, i, qty, price, consumed, addItem);
         }
@@ -279,7 +290,7 @@ class ReceiptParser {
         final leadQty = int.tryParse(nameMatch.group(1) ?? '') ?? 1;
         final name = _cleanName(nameMatch.group(2) ?? '');
         final trailQty = int.tryParse(nameMatch.group(3) ?? nameMatch.group(4) ?? '') ?? 1;
-        final price = _parseAmount(nameMatch.group(5) ?? '0');
+        final price = _parseAmount(nameMatch.group(5) ?? '0', currency);
         final isUnitQtyName = _unitQtyNameRegex.hasMatch(name);
         if (_letterCount(name) >= 3 &&
             !isUnitQtyName &&
@@ -303,7 +314,7 @@ class ReceiptParser {
     // nama yang belum terpakai dengan blok harga — dan GABUNG, jangan replace,
     // agar item yang sudah benar tetap dipertahankan.
     if (extractedItems.length <= 2) {
-      final zipped = _zipColumnFallback(lines, consumed);
+      final zipped = _zipColumnFallback(lines, consumed, currency);
       if (zipped != null) {
         final (names0, qtyLines, amounts, amountQtys) = zipped;
         final names = names0;
@@ -383,25 +394,25 @@ class ReceiptParser {
 
   /// Ambil nominal dari baris label; jika tidak ada (mis. "PPN 10%" atau
   /// "Sub Total" tanpa angka), coba baris berikutnya.
-  static double _extractAmountWithPeek(int i, List<String> lines, Set<int> consumed) {
-    var amt = _extractAmount(lines[i]);
+  static double _extractAmountWithPeek(int i, List<String> lines, Set<int> consumed, String currency) {
+    var amt = _extractAmount(lines[i], currency);
     if (amt == 0 && i + 1 < lines.length) {
       final next = _amountOnlyRegex.firstMatch(lines[i + 1]);
       if (next != null && next.group(1) == null) {
-        amt = _parseAmount(next.group(2)!);
+        amt = _parseAmount(next.group(2)!, currency);
         consumed.add(i + 1);
       }
     }
     return amt;
   }
 
-  static double _extractAmount(String line) {
+  static double _extractAmount(String line, String currency) {
     final t = line.trim();
     if (t.endsWith('%')) return 0;
     final amountRegex = RegExp(r'(\d[\d\.,]*)\s*$');
     final match = amountRegex.firstMatch(line);
     if (match == null) return 0;
-    return _parseAmount(match.group(1)!);
+    return _parseAmount(match.group(1)!, currency);
   }
 
   /// Baris dapat menjadi nama item pada pasangan dua baris bila bukan label,
@@ -480,3 +491,4 @@ class ReceiptParser {
     return false;
   }
 }
+

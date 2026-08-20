@@ -22,6 +22,7 @@ class NeoLottieLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     final targetUrl = lottieUrl ?? defaultScanLoadingUrl;
 
     return Column(
@@ -32,12 +33,12 @@ class NeoLottieLoader extends StatelessWidget {
           height: height + 24,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.primaryContainer,
+            color: c.primaryContainer,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.borderBlack, width: AppColors.borderWidth),
+            border: Border.all(color: c.borderBlack, width: AppColors.borderWidth),
             boxShadow: [
               BoxShadow(
-                color: AppColors.borderBlack,
+                color: c.borderBlack,
                 offset: Offset(3.5, 3.5),
               ),
             ],
@@ -55,7 +56,7 @@ class NeoLottieLoader extends StatelessWidget {
                   height: height * 0.5,
                   child: CircularProgressIndicator(
                     strokeWidth: 4,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.borderBlack),
+                    valueColor: AlwaysStoppedAnimation<Color>(c.borderBlack),
                   ),
                 ),
               );

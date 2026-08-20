@@ -12,9 +12,11 @@ import '../../../core/utils/app_snackbar.dart';
 import '../../../shared/widgets/neo_avatar.dart';
 import '../../../shared/widgets/neo_button.dart';
 import '../../../shared/widgets/neo_confirm_dialog.dart';
+import '../../../shared/widgets/neo_shimmer_skeleton.dart';
 
 class RingkasanScreen extends StatefulWidget {
   final SplitBill splitBill;
+  final bool isLoading;
   final VoidCallback onBack;
   final Function(SplitBill)? onUpdateSplit;
   final Function(String)? onDeleteSplit;
@@ -23,6 +25,7 @@ class RingkasanScreen extends StatefulWidget {
   const RingkasanScreen({
     super.key,
     required this.splitBill,
+    this.isLoading = false,
     required this.onBack,
     this.onUpdateSplit,
     this.onDeleteSplit,
@@ -105,13 +108,18 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
       )
       .toList();
 
+  /// Bagian member untuk satu item: total baris dibagi jumlah orang yang ikut
+  /// item itu (semua member bila item tanpa assign). Nilai inilah yang
+  /// dijumlahkan ke subtotal member.
+  double _itemShare(ReceiptItem item) {
+    final count = item.assignedMemberIds.isEmpty
+        ? _members.length
+        : item.assignedMemberIds.length;
+    return count > 0 ? item.lineTotal / count : 0;
+  }
+
   double _memberSubtotal(Member member) {
-    return _memberItems(member).fold(0.0, (sum, i) {
-      final count = i.assignedMemberIds.isEmpty
-          ? _members.length
-          : i.assignedMemberIds.length;
-      return sum + (count > 0 ? i.lineTotal / count : 0);
-    });
+    return _memberItems(member).fold(0.0, (sum, i) => sum + _itemShare(i));
   }
 
   /// Baris rincian (judul, total, per anggota) yang sama dipakai untuk teks
@@ -129,7 +137,7 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
       final items = _memberItems(member);
       for (final item in items) {
         lines.add(
-          '  ${item.name} (x${item.quantity}) = ${formatCurrency(item.lineTotal)}',
+          '  ${item.name} (x${item.quantity}) = ${formatCurrency(_itemShare(item))}',
         );
       }
       final taxShare = (member.amountOwed - _memberSubtotal(member))
@@ -139,9 +147,13 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
         '  ${tr('ring_subtotal')}: ${formatCurrency(_memberSubtotal(member))}',
       );
       if (taxShare > 0) {
-        lines.add('  ${tr('ring_pajak_layanan').replaceAll('{pct}', '${_taxPct()}')}: ${formatCurrency(taxShare)}');
+        lines.add(
+          '  ${tr('ring_pajak_layanan').replaceAll('{pct}', '${_taxPct()}')}: ${formatCurrency(taxShare)}',
+        );
       }
-      lines.add('  ${tr('ring_total_anda')}: ${formatCurrency(member.amountOwed)}');
+      lines.add(
+        '  ${tr('ring_total_anda')}: ${formatCurrency(member.amountOwed)}',
+      );
       lines.add('');
     }
     return lines;
@@ -161,15 +173,22 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
         pageFormat: PdfPageFormat.a4,
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: _summaryLines().map((line) => pw.Padding(
-            padding: const pw.EdgeInsets.only(bottom: 3),
-            child: pw.Text(
-              line,
-              style: line.startsWith('  ')
-                  ? pw.TextStyle(fontSize: 10)
-                  : pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
-            ),
-          )).toList(),
+          children: _summaryLines()
+              .map(
+                (line) => pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 3),
+                  child: pw.Text(
+                    line,
+                    style: line.startsWith('  ')
+                        ? pw.TextStyle(fontSize: 10)
+                        : pw.TextStyle(
+                            fontSize: 12,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                  ),
+                ),
+              )
+              .toList(),
         ),
       ),
     );
@@ -179,10 +198,11 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     final pct = _taxPct();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
         child: SafeArea(
@@ -209,8 +229,8 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
                         padding: const EdgeInsets.only(right: 8),
                         child: NeoCircleButton(
                           icon: Icons.delete_outline_rounded,
-                          backgroundColor: AppColors.errorContainer,
-                          iconColor: AppColors.error,
+                          backgroundColor: c.errorContainer,
+                          iconColor: c.error,
                           onTap: () async {
                             final confirmed = await showDeleteConfirmDialog(
                               context,
@@ -239,190 +259,233 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Text(
-              tr('ring_pembayaran'),
-              style: Theme.of(
-                context,
-              ).textTheme.headlineLarge?.copyWith(fontSize: 30),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${widget.splitBill.title} - ${DateFormatter.formatDate(widget.splitBill.date)}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Total Bill Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: AppColors.borderBlack,
-                  width: AppColors.borderWidth,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.borderBlack,
-                    offset: AppColors.shadowOffset,
-                    blurRadius: 0,
+      body: widget.isLoading
+          ? SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  NeoShimmerCard(height: 150, boxSize: 48, lines: 3),
+                  SizedBox(height: 16),
+                  NeoShimmerCard(
+                    height: 200,
+                    boxSize: 44,
+                    lines: 5,
+                    trailing: true,
+                  ),
+                  SizedBox(height: 16),
+                  NeoShimmerCard(
+                    height: 200,
+                    boxSize: 44,
+                    lines: 5,
+                    trailing: true,
+                  ),
+                  SizedBox(height: 16),
+                  NeoShimmerCard(
+                    height: 200,
+                    boxSize: 44,
+                    lines: 5,
+                    trailing: true,
                   ),
                 ],
               ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header
                   Text(
-                    tr('ring_total_tagihan').toUpperCase(),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.onPrimaryContainer,
-                      letterSpacing: 1.5,
+                    tr('ring_pembayaran'),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.headlineLarge?.copyWith(fontSize: 30),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${widget.splitBill.title} - ${DateFormatter.formatDate(widget.splitBill.date)}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: c.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    formatCurrency(widget.splitBill.totalAmount),
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontSize: 30,
-                      color: AppColors.onPrimaryContainer,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 24),
+
+                  // Total Bill Card
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
+                      horizontal: 20,
+                      vertical: 24,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLowest.withAlpha(170),
-                      borderRadius: BorderRadius.circular(999),
+                      color: c.primaryContainer,
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: AppColors.borderBlack,
-                        width: 1.5,
+                        color: c.borderBlack,
+                        width: AppColors.borderWidth,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.receipt_long_rounded,
-                          size: 16,
-                          color: AppColors.onSurface,
+                      boxShadow: [
+                        BoxShadow(
+                          color: c.borderBlack,
+                          offset: AppColors.shadowOffset,
+                          blurRadius: 0,
                         ),
-                        const SizedBox(width: 6),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
                         Text(
-                          tr('ring_incl_tax').replaceAll('{pct}', '$pct'),
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(color: AppColors.onSurface),
+                          tr('ring_total_tagihan').toUpperCase(),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: c.onPrimaryContainer,
+                                letterSpacing: 1.5,
+                              ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          formatCurrency(widget.splitBill.totalAmount),
+                          style: Theme.of(context).textTheme.headlineLarge
+                              ?.copyWith(
+                                fontSize: 30,
+                                color: c.onPrimaryContainer,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: c.surfaceContainerLowest.withAlpha(
+                              170,
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: c.borderBlack,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.receipt_long_rounded,
+                                size: 16,
+                                color: c.onSurface,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                tr('ring_incl_tax').replaceAll('{pct}', '$pct'),
+                                style: Theme.of(context).textTheme.labelMedium
+                                    ?.copyWith(color: c.onSurface),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-            // Breakdown Per Member
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final twoCol = constraints.maxWidth > 640;
-                final cardWidth = twoCol
-                    ? (constraints.maxWidth - 12) / 2
-                    : constraints.maxWidth;
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: _members.asMap().entries.map((entry) {
-                    final idx = entry.key;
-                    final member = entry.value;
-                    return SizedBox(
-                      width: cardWidth,
-                      child: _buildMemberCard(context, member, idx),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
+                  // Breakdown Per Member
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final twoCol = constraints.maxWidth > 640;
+                      final cardWidth = twoCol
+                          ? (constraints.maxWidth - 12) / 2
+                          : constraints.maxWidth;
+                      return Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: _members.asMap().entries.map((entry) {
+                          final idx = entry.key;
+                          final member = entry.value;
+                          return SizedBox(
+                            width: cardWidth,
+                            child: _buildMemberCard(context, member, idx),
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
 
-            const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-            // Actions
-            NeoButton(
-              onTap: _shareWhatsApp,
-              width: double.infinity,
-              backgroundColor: AppColors.accentGreen,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.send_rounded, color: Colors.black, size: 20),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        tr('ring_bagikan'),
-                        style: const TextStyle(
+                  // Actions
+                  NeoButton(
+                    onTap: _shareWhatsApp,
+                    width: double.infinity,
+                    backgroundColor: AppColors.accentGreen,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.send_rounded,
                           color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                          size: 20,
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              tr('ring_bagikan'),
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  NeoButton(
+                    onTap: _exportPdf,
+                    width: double.infinity,
+                    backgroundColor: c.surfaceContainerLowest,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.download_rounded,
+                          color: c.onSurface,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              tr('ring_simpan_pdf'),
+                              style: TextStyle(
+                                color: c.onSurface,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            NeoButton(
-              onTap: _exportPdf,
-              width: double.infinity,
-              backgroundColor: AppColors.surfaceContainerLowest,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.download_rounded,
-                    color: AppColors.onSurface,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        tr('ring_simpan_pdf'),
-                        style: TextStyle(
-                          color: AppColors.onSurface,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 100),
-          ],
-        ),
-      ),
     );
   }
 
   Widget _buildMemberCard(BuildContext context, Member member, int index) {
+    final c = context.palette;
     final memberItems = _memberItems(member);
     final subtotal = _memberSubtotal(member);
     final taxShare = (member.amountOwed - subtotal)
@@ -430,8 +493,8 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
         .toDouble();
     final pct = _taxPct();
     final cardBg = member.isPaid
-        ? AppColors.secondaryContainer.withAlpha(90)
-        : AppColors.surfaceContainerLow;
+        ? c.secondaryContainer.withAlpha(90)
+        : c.surfaceContainerLow;
 
     return GestureDetector(
       onTap: () => _toggleMemberPaidStatus(index),
@@ -442,7 +505,7 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
           color: cardBg,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppColors.borderBlack,
+            color: c.borderBlack,
             width: AppColors.borderWidth,
           ),
         ),
@@ -478,11 +541,11 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: member.isPaid
-                        ? AppColors.secondaryContainer
-                        : AppColors.surfaceContainerLowest,
+                        ? c.secondaryContainer
+                        : c.surfaceContainerLowest,
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: AppColors.borderBlack,
+                      color: c.borderBlack,
                       width: 1.5,
                     ),
                   ),
@@ -492,21 +555,21 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: member.isPaid
-                          ? AppColors.onAccent(AppColors.secondaryContainer)
-                          : AppColors.onSurface,
+                          ? AppColors.onAccent(c.secondaryContainer)
+                          : c.onSurface,
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            Divider(height: 1, thickness: 2.5, color: AppColors.borderBlack),
+            Divider(height: 1, thickness: 2.5, color: c.borderBlack),
             const SizedBox(height: 10),
             if (memberItems.isEmpty)
               Text(
                 '-',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: c.onSurfaceVariant,
                 ),
               )
             else
@@ -526,7 +589,7 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        formatCurrency(item.price * item.quantity),
+                        formatCurrency(_itemShare(item)),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -536,7 +599,7 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
                 );
               }),
             const SizedBox(height: 10),
-            Divider(height: 1, thickness: 2.5, color: AppColors.borderBlack),
+            Divider(height: 1, thickness: 2.5, color: c.borderBlack),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -544,13 +607,13 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
                 Text(
                   tr('ring_subtotal'),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: c.onSurfaceVariant,
                   ),
                 ),
                 Text(
                   formatCurrency(subtotal),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: c.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -563,13 +626,13 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
                   Text(
                     tr('ring_pajak_layanan').replaceAll('{pct}', '$pct'),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: c.onSurfaceVariant,
                     ),
                   ),
                   Text(
                     formatCurrency(taxShare),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: c.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -599,5 +662,4 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
       ),
     );
   }
-
-  }
+}

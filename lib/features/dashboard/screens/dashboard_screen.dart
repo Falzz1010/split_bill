@@ -8,12 +8,15 @@ import '../../../shared/widgets/neo_card.dart';
 import '../../../shared/widgets/neo_button.dart';
 import '../../../shared/widgets/neo_search_bar.dart';
 import '../../../shared/widgets/neo_chip.dart';
+import '../../../shared/widgets/neo_paw_logo.dart';
 import '../../../shared/widgets/neo_pie_chart.dart';
 import '../../../shared/widgets/neo_line_chart.dart';
+import '../../../shared/widgets/neo_shimmer_skeleton.dart';
 
 class DashboardScreen extends StatefulWidget {
   final List<SplitBill> splits;
   final SplitBill activeFeaturedSplit;
+  final bool isLoading;
   final VoidCallback onOpenScanner;
   final VoidCallback onCreateNewSplit;
   final Function(SplitBill) onSelectSplit;
@@ -22,6 +25,7 @@ class DashboardScreen extends StatefulWidget {
     super.key,
     required this.splits,
     required this.activeFeaturedSplit,
+    this.isLoading = false,
     required this.onOpenScanner,
     required this.onCreateNewSplit,
     required this.onSelectSplit,
@@ -67,7 +71,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         PieChartDataSection(
           label: tr('dash_empty_all'),
           value: 100,
-          color: AppColors.surfaceContainerHigh,
+          color: context.palette.surfaceContainerHigh,
         ),
       ];
     }
@@ -80,9 +84,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     final colors = [
-      AppColors.primaryContainer,
-      AppColors.secondaryContainer,
-      AppColors.errorContainer,
+      context.palette.primaryContainer,
+      context.palette.secondaryContainer,
+      context.palette.errorContainer,
       AppColors.tertiaryFixedDim,
       AppColors.primaryFixed,
     ];
@@ -138,11 +142,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     final dynamicPieSections = _calculatePieSections(_visibleSplits);
     final dynamicLinePoints = _calculateLineData(_visibleSplits);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
@@ -156,42 +161,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     child: Row(
                       children: [
-                        Container(
-                          width: 46,
-                          height: 46,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.primaryContainer,
-                            border: Border.all(
-                              color: AppColors.borderBlack,
-                              width: AppColors.borderWidth,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              tr('dash_greeting_name')[0],
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 18,
-                                color: AppColors.onPrimaryContainer,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
+                        NeoPawLogo(size: 52),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Hi, ${tr('dash_greeting_name')}',
-                                style: Theme.of(context).textTheme.headlineSmall
-                                    ?.copyWith(fontSize: 18),
+                                tr('dash_title'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                 overflow: TextOverflow.ellipsis,
                               ),
+                              const SizedBox(height: 2),
                               Text(
                                 _greeting(),
-                                style: Theme.of(context).textTheme.bodySmall,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontSize: 14),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],
@@ -203,7 +196,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 8),
                   NeoButton(
                     onTap: widget.onCreateNewSplit,
-                    backgroundColor: AppColors.surfaceContainerLowest,
+                    backgroundColor: c.surfaceContainerLowest,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -211,7 +204,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add, size: 16, color: AppColors.onSurface),
+                        Icon(Icons.add, size: 16, color: c.onSurface),
                         const SizedBox(width: 4),
                         Text(
                           tr('dash_new_receipts'),
@@ -248,7 +241,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       tr('dash_buat_baru_plus'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.secondary,
+                        color: c.secondary,
                         fontSize: 13,
                       ),
                     ),
@@ -262,14 +255,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: ListView.builder(
                   clipBehavior: Clip.none,
                   scrollDirection: Axis.horizontal,
-                  itemCount: _visibleSplits.length + 1,
+                  itemCount:
+                      widget.isLoading ? 3 : _visibleSplits.length + 1,
                   itemBuilder: (context, index) {
+                    if (widget.isLoading) {
+                      return const Padding(
+                        padding: EdgeInsets.only(right: 12, bottom: 6),
+                        child: NeoShimmerCard(
+                          width: 150,
+                          height: 76,
+                          lines: 2,
+                        ),
+                      );
+                    }
+
                     if (index == 0) {
                       return Padding(
-                        padding: const EdgeInsets.only(right: 12, bottom: 6),
-                        child: NeoCard(
+                        padding: const EdgeInsets.only(right: 12, bottom: 6),                          child: NeoCard(
                           onTap: widget.onCreateNewSplit,
-                          backgroundColor: AppColors.secondaryContainer,
+                          backgroundColor: c.secondaryContainer,
                           borderRadius: 14,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
@@ -283,13 +287,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 height: 34,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: AppColors.secondary,
+                                  color: c.secondary,
                                 ),
                                 child: Icon(
                                   Icons.add,
                                   size: 20,
                                   color: AppColors.onAccent(
-                                    AppColors.secondary,
+                                    c.secondary,
                                   ),
                                 ),
                               ),
@@ -300,7 +304,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                   color: AppColors.onAccent(
-                                    AppColors.secondaryContainer,
+                                    c.secondaryContainer,
                                   ),
                                 ),
                               ),
@@ -342,9 +346,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               height: 36,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: AppColors.surfaceContainerLowest,
-                                border: Border.all(
-                                  color: AppColors.borderBlack,
+                              color: c.surfaceContainerLowest,
+                              border: Border.all(
+                                color: c.borderBlack,
                                   width: 1.5,
                                 ),
                               ),
@@ -354,7 +358,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
-                                    color: AppColors.onSurface,
+                                    color: c.onSurface,
                                   ),
                                 ),
                               ),
@@ -390,7 +394,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 24),
 
               // Dynamic Featured Split Card
-              if (widget.splits.isEmpty)
+              if (widget.isLoading)
+                const NeoShimmerCard(
+                  height: 320,
+                  boxSize: 60,
+                  lines: 5,
+                  trailing: true,
+                )
+              else if (widget.splits.isEmpty)
                 _buildEmptyStateCard(context)
               else if (_visibleSplits.isEmpty)
                 _buildNoResultsCard(context)
@@ -409,10 +420,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             width: 60,
                             height: 60,
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceContainerLow,
+                              color: c.surfaceContainerLow,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppColors.borderBlack,
+                                color: c.borderBlack,
                                 width: 2,
                               ),
                             ),
@@ -420,7 +431,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               child: Icon(
                                 Icons.receipt_long_rounded,
                                 size: 32,
-                                color: AppColors.primary,
+                                color: c.primary,
                               ),
                             ),
                           ),
@@ -440,7 +451,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  _featuredSplit.category,
+                                  _featuredSplit.displayCategory,
                                   style: Theme.of(context).textTheme.bodySmall,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -451,14 +462,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     _featuredSplit.date,
                                   ),
                                   icon: Icons.calendar_month_rounded,
-                                  backgroundColor: AppColors.surfaceContainer,
+                                  backgroundColor: c.surfaceContainer,
                                 ),
                               ],
                             ),
                           ),
                           Icon(
                             Icons.more_vert_rounded,
-                            color: AppColors.onSurfaceVariant,
+                            color: c.onSurfaceVariant,
                           ),
                         ],
                       ),
@@ -472,11 +483,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: _featuredSplit.isCompleted
-                              ? AppColors.secondaryContainer.withAlpha(80)
-                              : AppColors.errorContainer.withAlpha(80),
+                              ? c.secondaryContainer.withAlpha(80)
+                              : c.errorContainer.withAlpha(80),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: AppColors.borderBlack,
+                            color: c.borderBlack,
                             width: 2,
                           ),
                         ),
@@ -488,8 +499,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: _featuredSplit.isCompleted
-                                    ? AppColors.secondary
-                                    : AppColors.error,
+                                    ? c.secondary
+                                    : c.error,
                               ),
                               child: Icon(
                                 _featuredSplit.isCompleted
@@ -498,8 +509,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 size: 14,
                                 color: AppColors.onAccent(
                                   _featuredSplit.isCompleted
-                                      ? AppColors.secondary
-                                      : AppColors.error,
+                                      ? c.secondary
+                                      : c.error,
                                 ),
                               ),
                             ),
@@ -515,7 +526,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     style: Theme.of(context)
                                         .textTheme
                                         .labelMedium
-                                        ?.copyWith(color: AppColors.onSurface),
+                                        ?.copyWith(color: c.onSurface),
                                   ),
                                   Text(
                                     tr('dash_member_transfer')
@@ -536,7 +547,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             Icon(
                               Icons.chevron_right_rounded,
-                              color: AppColors.onSurfaceVariant,
+                              color: c.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -546,10 +557,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       // 3 Grid Stat Boxes
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHighest,
+                          color: c.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: AppColors.borderBlack,
+                            color: c.borderBlack,
                             width: 2,
                           ),
                         ),
@@ -563,7 +574,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               child: _buildStatItem(
                                 context,
                                 icon: Icons.payments_rounded,
-                                iconBg: AppColors.primaryContainer,
+                                iconBg: c.primaryContainer,
                                 label: tr('dash_total'),
                                 value: formatCompactCurrency(
                                   _featuredSplit.totalAmount,
@@ -574,7 +585,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Container(
                               width: 2,
                               height: 50,
-                              color: AppColors.borderBlack,
+                              color: c.borderBlack,
                             ),
                             Expanded(
                               child: _buildStatItem(
@@ -590,7 +601,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Container(
                               width: 2,
                               height: 50,
-                              color: AppColors.borderBlack,
+                              color: c.borderBlack,
                             ),
                             Expanded(
                               child: _buildStatItem(
@@ -612,7 +623,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       NeoButton(
                         onTap: () => widget.onSelectSplit(_featuredSplit),
                         width: double.infinity,
-                        backgroundColor: AppColors.primaryContainer,
+                        backgroundColor: c.primaryContainer,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         child: Text(
                           tr('dash_lihat_edit'),
@@ -620,7 +631,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ?.copyWith(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 15,
-                                color: AppColors.onPrimaryContainer,
+                                color: c.onPrimaryContainer,
                               ),
                         ),
                       ),
@@ -630,18 +641,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 24),
 
               // Dynamic Real-Time Section 1: Pie Chart (Kategori Pengeluaran)
-              NeoPieChart(
-                title: tr('dash_category_chart'),
-                sections: dynamicPieSections,
-              ),
+              if (widget.isLoading)
+                const NeoShimmerCard(
+                  height: 230,
+                  boxSize: 48,
+                  lines: 6,
+                )
+              else
+                NeoPieChart(
+                  title: tr('dash_category_chart'),
+                  sections: dynamicPieSections,
+                ),
               const SizedBox(height: 24),
 
               // Dynamic Real-Time Section 2: Line Chart (Tren Split Bill 6 Bulan)
-              NeoLineChart(
-                title: tr('dash_trend_chart'),
-                subtitle: tr('dash_chart_6mo'),
-                data: dynamicLinePoints,
-              ),
+              if (widget.isLoading)
+                const NeoShimmerCard(
+                  height: 230,
+                  boxSize: 48,
+                  lines: 6,
+                )
+              else
+                NeoLineChart(
+                  title: tr('dash_trend_chart'),
+                  subtitle: tr('dash_chart_6mo'),
+                  emptyText: tr('dash_no_line_data'),
+                  data: dynamicLinePoints,
+                ),
 
               // Bottom safe padding for bottom nav bar
               const SizedBox(height: 100),
@@ -653,6 +679,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildEmptyStateCard(BuildContext context) {
+    final c = context.palette;
     return NeoCard(
       borderRadius: 28,
       padding: const EdgeInsets.all(24),
@@ -663,15 +690,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLow,
+              color: c.surfaceContainerLow,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.borderBlack, width: 2),
+              border: Border.all(color: c.borderBlack, width: 2),
             ),
             child: Center(
               child: Icon(
                 Icons.receipt_long_rounded,
                 size: 36,
-                color: AppColors.primary,
+                color: c.primary,
               ),
             ),
           ),
@@ -692,14 +719,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 20),
           NeoButton(
             onTap: widget.onCreateNewSplit,
-            backgroundColor: AppColors.primaryContainer,
+            backgroundColor: c.primaryContainer,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Text(
               tr('dash_buat_struk_baru'),
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
-                color: AppColors.onPrimaryContainer,
+                color: c.onPrimaryContainer,
               ),
             ),
           ),
@@ -709,6 +736,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildNoResultsCard(BuildContext context) {
+    final c = context.palette;
     return NeoCard(
       borderRadius: 28,
       padding: const EdgeInsets.all(24),
@@ -719,15 +747,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLow,
+              color: c.surfaceContainerLow,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderBlack, width: 2),
+              border: Border.all(color: c.borderBlack, width: 2),
             ),
             child: Center(
               child: Icon(
                 Icons.search_off_rounded,
                 size: 28,
-                color: AppColors.primary,
+                color: c.primary,
               ),
             ),
           ),
@@ -788,7 +816,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
           decoration: BoxDecoration(
-            color: AppColors.surfaceContainerLowest.withAlpha(180),
+            color: context.palette.surfaceContainerLowest.withAlpha(180),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
@@ -796,7 +824,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style: TextStyle(
               fontSize: 8,
               fontWeight: FontWeight.bold,
-              color: AppColors.onSurfaceVariant,
+              color: context.palette.onSurfaceVariant,
             ),
           ),
         ),

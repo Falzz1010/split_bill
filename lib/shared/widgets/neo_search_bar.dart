@@ -15,28 +15,29 @@ class NeoSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
+        color: c.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppColors.borderBlack, width: AppColors.borderWidth),
+        border: Border.all(color: c.borderBlack, width: AppColors.borderWidth),
       ),
       child: TextField(
         controller: controller,
         onChanged: onChanged,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.onSurface,
+              color: c.onSurface,
               fontWeight: FontWeight.w600,
             ),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.outline,
+                color: c.outline,
               ),
           prefixIcon: Icon(
             Icons.search_rounded,
-            color: AppColors.onSurface,
+            color: c.onSurface,
             size: 20,
           ),
           border: InputBorder.none,

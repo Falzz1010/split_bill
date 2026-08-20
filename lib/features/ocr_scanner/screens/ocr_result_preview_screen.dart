@@ -1,11 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/models/split_model.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_l10n.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/currency_rates.dart';
 import '../../../core/utils/receipt_parser.dart';
 import '../../../shared/widgets/neo_button.dart';
 
@@ -40,6 +42,26 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
   late ParsedReceiptResult _parsed = widget.parsed;
   late List<ReceiptItem> _items = List.of(widget.parsed.items);
 
+  /// Mata uang asal struk (terdeteksi dari teks; null/IDR = rupiah).
+  String? _currency;
+
+  @override
+  void initState() {
+    super.initState();
+    _currency = CurrencyRatesService.detectCurrency(widget.rawText);
+  }
+
+  bool get _isForeign => _currency != null && _currency != 'IDR';
+
+  /// Format nilai dalam mata uang asal struk ("$ 12.50" / "Rp 28.000").
+  String _fmt(double v, {int d = 0}) {
+    final code = _currency;
+    final nf = code == null || code == 'IDR'
+        ? NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: d)
+        : NumberFormat.currency(locale: 'en_US', symbol: '$code ', decimalDigits: code == 'JPY' ? 0 : d);
+    return nf.format(v);
+  }
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -49,8 +71,11 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
 
   /// Parse ulang dari teks mentah yang sudah diedit pengguna.
   void _reparse() {
-    final re = ReceiptParser.parseText(_rawTextController.text);
+    final c = context.palette;
+    final currency = CurrencyRatesService.detectCurrency(_rawTextController.text);
+    final re = ReceiptParser.parseText(_rawTextController.text, currency: currency ?? 'IDR');
     setState(() {
+      _currency = currency;
       _parsed = re;
       _items = List.of(re.items);
       if (_titleController.text.trim().isEmpty) {
@@ -61,9 +86,9 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
       SnackBar(
         content: Text(
           '${tr('ocr_preview_reparsed')} (${re.items.length} item)',
-          style: TextStyle(color: AppColors.background),
+          style: TextStyle(color: c.background),
         ),
-        backgroundColor: AppColors.onSurface,
+        backgroundColor: c.onSurface,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -92,11 +117,13 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
 
     final result = await showDialog<ReceiptItem>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.surfaceContainerLowest,
+      builder: (dialogContext) {
+        final c = context.palette;
+        return AlertDialog(
+          backgroundColor: c.surfaceContainerLowest,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: AppColors.borderBlack, width: 2),
+          side: BorderSide(color: c.borderBlack, width: 2),
         ),
         title: Text(
           item == null ? tr('ocr_preview_add_item') : tr('ocr_preview_edit_item'),
@@ -115,7 +142,7 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                   fillColor: Colors.white,
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: AppColors.borderBlack, width: 1.5),
+                    borderSide: BorderSide(color: c.borderBlack, width: 1.5),
                   ),
                 ),
               ),
@@ -132,7 +159,7 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                         fillColor: Colors.white,
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: AppColors.borderBlack, width: 1.5),
+                          borderSide: BorderSide(color: c.borderBlack, width: 1.5),
                         ),
                       ),
                     ),
@@ -148,7 +175,7 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                         fillColor: Colors.white,
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: AppColors.borderBlack, width: 1.5),
+                          borderSide: BorderSide(color: c.borderBlack, width: 1.5),
                         ),
                       ),
                     ),
@@ -171,8 +198,8 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
               if (name.isEmpty || price <= 0) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   SnackBar(
-                    content: Text(tr('create_invalid_input'), style: TextStyle(color: AppColors.background)),
-                    backgroundColor: AppColors.error,
+                    content: Text(tr('create_invalid_input'), style: TextStyle(color: c.background)),
+                    backgroundColor: c.error,
                   ),
                 );
                 return;
@@ -188,12 +215,13 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                 ),
               );
             },
-            backgroundColor: AppColors.primaryContainer,
+            backgroundColor: c.primaryContainer,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Text(tr('common_ok'), style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
-      ),
+      );
+      },
     );
 
     if (result != null) {
@@ -260,22 +288,40 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
 
   void _confirm() {
     final title = _titleController.text.trim().isEmpty ? 'Struk Baru' : _titleController.text.trim();
+    // Struk mata uang asing → konversi semua nilai ke IDR (kurs hari ini)
+    // saat disimpan, agar seluruh alur split bill tetap dalam rupiah.
+    final rates = CurrencyRatesService.instance;
+    final items = _isForeign
+        ? _items
+            .map((i) => ReceiptItem(
+                  id: i.id,
+                  name: i.name,
+                  price: rates.toIdr(i.price, _currency!),
+                  quantity: i.quantity,
+                  assignedMemberIds: i.assignedMemberIds,
+                ))
+            .toList()
+        : _items;
+    final subtotalIdr = _isForeign ? rates.toIdr(_subtotal, _currency!) : _subtotal;
+    final taxIdr = _isForeign ? rates.toIdr(_parsed.tax, _currency!) : _parsed.tax;
+    final serviceIdr = _isForeign ? rates.toIdr(_parsed.serviceCharge, _currency!) : _parsed.serviceCharge;
     widget.onConfirm(
       ParsedReceiptResult(
         merchantName: title,
-        subtotal: _subtotal,
-        tax: _parsed.tax,
-        serviceCharge: _parsed.serviceCharge,
-        totalAmount: _subtotal + _parsed.tax + _parsed.serviceCharge,
-        items: _items,
+        subtotal: subtotalIdr,
+        tax: taxIdr,
+        serviceCharge: serviceIdr,
+        totalAmount: subtotalIdr + taxIdr + serviceIdr,
+        items: items,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -290,11 +336,11 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLowest,
+                        color: c.surfaceContainerLowest,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.borderBlack, width: 2),
+                        border: Border.all(color: c.borderBlack, width: 2),
                       ),
-                      child: Icon(Icons.close, color: AppColors.onSurface),
+                      child: Icon(Icons.close, color: c.onSurface),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -308,7 +354,7 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                         ),
                         Text(
                           '${tr('ocr_preview_item_count')}: ${_items.length}',
-                          style: TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant),
+                          style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -316,7 +362,7 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                 ],
               ),
             ),
-            Divider(color: AppColors.borderBlack, height: 1, thickness: 2),
+            Divider(color: c.borderBlack, height: 1, thickness: 2),
 
             Expanded(
               child: SingleChildScrollView(
@@ -337,7 +383,7 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                           decoration: BoxDecoration(
                             color: Colors.black,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.borderBlack, width: 1.5),
+                            border: Border.all(color: c.borderBlack, width: 1.5),
                           ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -378,11 +424,11 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: AppColors.borderBlack, width: 2),
+                          borderSide: BorderSide(color: c.borderBlack, width: 2),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: AppColors.secondary, width: 2.5),
+                          borderSide: BorderSide(color: c.secondary, width: 2.5),
                         ),
                       ),
                     ),
@@ -399,14 +445,14 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: AppColors.secondaryContainer,
+                              color: c.secondaryContainer,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColors.borderBlack, width: 1.5),
+                              border: Border.all(color: c.borderBlack, width: 1.5),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.refresh_rounded, size: 14, color: AppColors.borderBlack),
+                                Icon(Icons.refresh_rounded, size: 14, color: c.borderBlack),
                                 const SizedBox(width: 4),
                                 Text(
                                   tr('ocr_preview_reparse'),
@@ -421,9 +467,9 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                     const SizedBox(height: 6),
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLow,
+                        color: c.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.outlineVariant, width: 1.5),
+                        border: Border.all(color: c.outlineVariant, width: 1.5),
                       ),
                       child: TextField(
                         controller: _rawTextController,
@@ -439,6 +485,47 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                     ),
                     const SizedBox(height: 18),
 
+                    // Banner kurs: struk dalam mata uang asing → setara IDR
+                    if (_isForeign) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: c.primaryContainer,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: c.borderBlack, width: 2),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.currency_exchange_rounded, size: 18, color: c.onPrimaryContainer),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    tr('ocr_preview_foreign_currency').replaceAll('{code}', _currency!),
+                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              CurrencyRatesService.instance.formatRate(_currency!),
+                              style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_fmt(_subtotal)} ≈ ${formatCurrency(CurrencyRatesService.instance.toIdr(_subtotal, _currency!))}',
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                    ],
+
                     // Daftar item hasil parse
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -449,14 +536,14 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryContainer,
+                              color: c.primaryContainer,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColors.borderBlack, width: 1.5),
+                              border: Border.all(color: c.borderBlack, width: 1.5),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.add_rounded, size: 14, color: AppColors.borderBlack),
+                                Icon(Icons.add_rounded, size: 14, color: c.borderBlack),
                                 const SizedBox(width: 4),
                                 Text(
                                   tr('ocr_preview_add_item'),
@@ -474,13 +561,13 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                         padding: const EdgeInsets.all(12),
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerLow,
+                          color: c.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.outlineVariant),
+                          border: Border.all(color: c.outlineVariant),
                         ),
                         child: Text(
                           tr('create_no_items'),
-                          style: TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+                          style: TextStyle(fontSize: 11, color: c.onSurfaceVariant),
                         ),
                       )
                     else
@@ -492,9 +579,9 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceContainerLowest,
+                              color: c.surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.borderBlack, width: 1.5),
+                              border: Border.all(color: c.borderBlack, width: 1.5),
                             ),
                             child: Row(
                               children: [
@@ -510,29 +597,29 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        '${item.quantity}x • ${formatCurrency(item.price)}',
-                                        style: TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+                                        '${item.quantity}x • ${_fmt(item.price)}',
+                                        style: TextStyle(fontSize: 11, color: c.onSurfaceVariant),
                                       ),
                                     ],
                                   ),
                                 ),
                                 Text(
-                                  formatCurrency(item.price * item.quantity),
-                                  style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 13),
+                                  _fmt(item.price * item.quantity),
+                                  style: TextStyle(fontWeight: FontWeight.w800, color: c.primary, fontSize: 13),
                                 ),
                                 const SizedBox(width: 4),
                                 GestureDetector(
                                   onTap: () => _editItem(idx),
                                   child: Padding(
                                     padding: const EdgeInsets.all(4),
-                                    child: Icon(Icons.edit_rounded, size: 16, color: AppColors.onSurfaceVariant),
+                                    child: Icon(Icons.edit_rounded, size: 16, color: c.onSurfaceVariant),
                                   ),
                                 ),
                                 GestureDetector(
                                   onTap: () => _removeItem(idx),
                                   child: Padding(
                                     padding: const EdgeInsets.all(4),
-                                    child: Icon(Icons.delete_outline, size: 16, color: AppColors.error),
+                                    child: Icon(Icons.delete_outline, size: 16, color: c.error),
                                   ),
                                 ),
                               ],
@@ -546,9 +633,9 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          color: AppColors.secondaryContainer.withAlpha(70),
+                          color: c.secondaryContainer.withAlpha(70),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.borderBlack, width: 1.5),
+                          border: Border.all(color: c.borderBlack, width: 1.5),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -557,8 +644,8 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                               child: Text(tr('create_subtotal'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                             ),
                             Text(
-                              formatCurrency(_subtotal),
-                              style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 14),
+                              _fmt(_subtotal),
+                              style: TextStyle(fontWeight: FontWeight.w800, color: c.primary, fontSize: 14),
                             ),
                           ],
                         ),
@@ -575,16 +662,16 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
               child: NeoButton(
                 onTap: _confirm,
                 width: double.infinity,
-                backgroundColor: AppColors.primaryContainer,
+                backgroundColor: c.primaryContainer,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.check_circle_rounded, color: AppColors.onPrimaryContainer, size: 20),
+                    Icon(Icons.check_circle_rounded, color: c.onPrimaryContainer, size: 20),
                     const SizedBox(width: 6),
                     Text(
                       tr('ocr_preview_continue'),
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.onPrimaryContainer),
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: c.onPrimaryContainer),
                     ),
                   ],
                 ),

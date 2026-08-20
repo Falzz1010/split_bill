@@ -119,7 +119,7 @@ class _FeatureTutorialOverlayState extends State<FeatureTutorialOverlay>
                 behavior: HitTestBehavior.opaque,
                 onTap: () {},
                 child: CustomPaint(
-                  painter: _HolePainter(hole: hole, borderColor: AppColors.primaryContainer),
+                  painter: _HolePainter(hole: hole, borderColor: context.palette.primaryContainer),
                   size: Size.infinite,
                 ),
               ),
@@ -150,9 +150,9 @@ class _FeatureTutorialOverlayState extends State<FeatureTutorialOverlay>
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLowest,
+                      color: context.palette.surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.borderBlack, width: 1.5),
+                      border: Border.all(color: context.palette.borderBlack, width: 1.5),
                     ),
                     child: Text(
                       tr('tut_skip'),
@@ -170,15 +170,16 @@ class _FeatureTutorialOverlayState extends State<FeatureTutorialOverlay>
 
   Widget _buildCard(FeatureTutorialStep step) {
     final theme = Theme.of(context);
+    final c = context.palette;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
+        color: c.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.borderBlack, width: AppColors.borderWidth),
+        border: Border.all(color: c.borderBlack, width: AppColors.borderWidth),
         boxShadow: [
           BoxShadow(
-            color: AppColors.borderBlack,
+            color: c.borderBlack,
             offset: AppColors.shadowOffset,
             blurRadius: 0,
           ),
@@ -195,7 +196,7 @@ class _FeatureTutorialOverlayState extends State<FeatureTutorialOverlay>
           const SizedBox(height: 6),
           Text(
             tr(step.descKey),
-            style: TextStyle(fontSize: 13.5, height: 1.5, color: AppColors.onSurfaceVariant),
+            style: TextStyle(fontSize: 13.5, height: 1.5, color: c.onSurfaceVariant),
           ),
           const SizedBox(height: 14),
           Row(
@@ -209,9 +210,9 @@ class _FeatureTutorialOverlayState extends State<FeatureTutorialOverlay>
                   width: isActive ? 22 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: isActive ? AppColors.primaryContainer : Colors.transparent,
+                    color: isActive ? c.primaryContainer : Colors.transparent,
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: AppColors.borderBlack, width: 1.2),
+                    border: Border.all(color: c.borderBlack, width: 1.2),
                   ),
                 );
               }),
@@ -219,15 +220,15 @@ class _FeatureTutorialOverlayState extends State<FeatureTutorialOverlay>
               if (_current > 0) ...[
                 NeoButton(
                   onTap: _back,
-                  backgroundColor: AppColors.surfaceContainerLow,
+                  backgroundColor: c.surfaceContainerLow,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  child: Icon(Icons.arrow_back_rounded, size: 18, color: AppColors.onSurface),
+                  child: Icon(Icons.arrow_back_rounded, size: 18, color: c.onSurface),
                 ),
                 const SizedBox(width: 8),
               ],
               NeoButton(
                 onTap: _next,
-                backgroundColor: AppColors.primaryContainer,
+                backgroundColor: c.primaryContainer,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -235,12 +236,12 @@ class _FeatureTutorialOverlayState extends State<FeatureTutorialOverlay>
                     Icon(
                       _isLast ? Icons.check_rounded : Icons.arrow_forward_rounded,
                       size: 18,
-                      color: AppColors.onPrimaryContainer,
+                      color: c.onPrimaryContainer,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       _isLast ? tr('tut_done') : tr('tut_next'),
-                      style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.onPrimaryContainer, fontSize: 13),
+                      style: TextStyle(fontWeight: FontWeight.w800, color: c.onPrimaryContainer, fontSize: 13),
                     ),
                   ],
                 ),

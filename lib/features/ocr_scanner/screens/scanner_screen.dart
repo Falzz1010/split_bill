@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/utils/app_l10n.dart';
+import '../../../core/utils/currency_rates.dart';
 import '../../../core/utils/ocr_error.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/neo_lottie_loader.dart';
@@ -306,7 +307,8 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
   void _finishWithText(String rawText, [Uint8List? previewBytes]) {
     if (!mounted) return;
     setState(() => _isScanning = false);
-    final parsed = ReceiptParser.parseText(rawText);
+    final currency = CurrencyRatesService.detectCurrency(rawText) ?? 'IDR';
+    final parsed = ReceiptParser.parseText(rawText, currency: currency);
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => OcrResultPreviewScreen(
@@ -354,20 +356,22 @@ Grand Total 150.000
   }
 
   void _showError(String message) {
+    final c = context.palette;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: TextStyle(color: AppColors.background)),
-        backgroundColor: AppColors.onSurface,
+        content: Text(message, style: TextStyle(color: c.background)),
+        backgroundColor: c.onSurface,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     final cameraReady = _controller != null && _controller!.value.isInitialized;
 
     return Scaffold(
-      backgroundColor: AppColors.borderBlack,
+      backgroundColor: c.borderBlack,
       body: Stack(
         children: [
           // Live Camera Feed (OCR asli)
@@ -432,7 +436,7 @@ Grand Total 150.000
               height: MediaQuery.of(context).size.height * 0.52,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.primaryContainer, width: 3.5),
+                border: Border.all(color: c.primaryContainer, width: 3.5),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withAlpha(120),
@@ -453,10 +457,10 @@ Grand Total 150.000
                         child: Container(
                           height: 3.5,
                           decoration: BoxDecoration(
-                            color: AppColors.primaryContainer,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primaryContainer.withAlpha(200),
+                          color: c.primaryContainer,
+                          boxShadow: [
+                            BoxShadow(
+                              color: c.primaryContainer.withAlpha(200),
                                 blurRadius: 10,
                                 spreadRadius: 2,
                               ),
@@ -499,25 +503,25 @@ Grand Total 150.000
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLowest,
+                        color: c.surfaceContainerLowest,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.borderBlack, width: 2),
+                        border: Border.all(color: c.borderBlack, width: 2),
                       ),
-                      child: Icon(Icons.close, color: AppColors.onSurface),
+                      child: Icon(Icons.close, color: c.onSurface),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryContainer,
+                      color: c.primaryContainer,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.borderBlack, width: 2),
+                      border: Border.all(color: c.borderBlack, width: 2),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.auto_awesome_rounded, size: 16, color: AppColors.onPrimaryContainer),
+                        Icon(Icons.auto_awesome_rounded, size: 16, color: c.onPrimaryContainer),
                         SizedBox(width: 6),
-                        Text(tr('scan_smart'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.onPrimaryContainer)),
+                        Text(tr('scan_smart'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: c.onPrimaryContainer)),
                       ],
                     ),
                   ),
@@ -527,13 +531,13 @@ Grand Total 150.000
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: _isFlashOn ? AppColors.primaryContainer : AppColors.surfaceContainerLowest,
+                        color: _isFlashOn ? c.primaryContainer : c.surfaceContainerLowest,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.borderBlack, width: 2),
+                        border: Border.all(color: c.borderBlack, width: 2),
                       ),
                       child: Icon(
                         _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-                        color: _isFlashOn ? AppColors.onPrimaryContainer : AppColors.onSurface,
+                        color: _isFlashOn ? c.onPrimaryContainer : c.onSurface,
                       ),
                     ),
                   ),
@@ -577,17 +581,17 @@ Grand Total 150.000
                         height: 76,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.primaryContainer,
-                          border: Border.all(color: AppColors.borderBlack, width: 3),
+                          color: c.primaryContainer,
+                          border: Border.all(color: c.borderBlack, width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.borderBlack,
+                              color: c.borderBlack,
                               offset: Offset(3, 3),
                             ),
                           ],
                         ),
                         child: Center(
-                          child: Icon(Icons.camera_alt_rounded, size: 36, color: AppColors.onPrimaryContainer),
+                          child: Icon(Icons.camera_alt_rounded, size: 36, color: c.onPrimaryContainer),
                         ),
                       ),
                     ),

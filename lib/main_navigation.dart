@@ -40,8 +40,11 @@ class _MainNavigationState extends State<MainNavigation> {
 
   late bool _tutorialVisible = widget.showFeatureTutorial;
 
+  /// Placeholder kosong — ID sengaja unik (bukan ID data valid) supaya
+  /// tidak pernah bentrok dengan split nyata. Digunakan HANYA sebagai
+  /// fallback saat daftar split masih kosong (fresh install / setelah clear).
   static final _emptyFallbackSplit = SplitBill(
-    id: 'empty_default',
+    id: '__empty_fallback__',
     title: 'Belum Ada Struk Belanja',
     category: 'Tap + Struk Baru untuk mulai',
     date: DateTime.now(),
@@ -56,6 +59,8 @@ class _MainNavigationState extends State<MainNavigation> {
   );
 
   /// Split yang sedang dibuka di editor / disorot dashboard.
+  /// Mengembalikan [_emptyFallbackSplit] bila belum ada data —
+  /// layar harus memeriksa `splits.isEmpty` untuk menampilkan empty state.
   SplitBill get currentSelectedSplit {
     final selected = SplitStore.instance.selected;
     if (selected != null) return selected;
@@ -87,6 +92,25 @@ class _MainNavigationState extends State<MainNavigation> {
         );
       },
     );
+  }
+
+  // Tab yang sedang menampilkan skeleton & yang sudah pernah menampilkannya.
+  // ponytail: skeleton durasi tampilan (1,2s) saat tab pertama kali dibuka —
+  // hapus bila data menjadi benar-benar lambat dimuat.
+  final Set<int> _skeletonTabs = {};
+  final Set<int> _visitedTabs = {};
+
+  void _selectTab(int index) {
+    setState(() {
+      _currentIndex = index;
+      if (!_visitedTabs.contains(index) && (index == 1 || index == 2)) {
+        _visitedTabs.add(index);
+        _skeletonTabs.add(index);
+        Future.delayed(const Duration(milliseconds: 1200), () {
+          if (mounted) setState(() => _skeletonTabs.remove(index));
+        });
+      }
+    });
   }
 
   Future<void> _finishTutorial() async {
@@ -139,11 +163,13 @@ class _MainNavigationState extends State<MainNavigation> {
     return ListenableBuilder(
       listenable: SplitStore.instance,
       builder: (context, _) {
+        final c = context.palette;
         final store = SplitStore.instance;
         final screens = [
           DashboardScreen(
             splits: store.splits,
             activeFeaturedSplit: currentSelectedSplit,
+            isLoading: store.isLoading,
             onOpenScanner: () => setState(() => _isScannerOpen = true),
             onCreateNewSplit: _openCreateSplitBottomSheet,
             onSelectSplit: (split) {
@@ -153,6 +179,7 @@ class _MainNavigationState extends State<MainNavigation> {
           ),
           RiwayatScreen(
             splits: store.splits,
+            isLoading: store.isLoading || _skeletonTabs.contains(1),
             onSelectSplit: (split) {
               SplitStore.instance.select(split);
               setState(() => _currentIndex = 2); // Switch to Ringkasan
@@ -163,6 +190,7 @@ class _MainNavigationState extends State<MainNavigation> {
           ),
           RingkasanScreen(
             splitBill: store.summarySplit ?? _emptyFallbackSplit,
+            isLoading: store.isLoading || _skeletonTabs.contains(2),
             onBack: () => setState(() => _currentIndex = 0),
             onDeleteSplit: (id) async {
               await SplitStore.instance.delete(id);
@@ -191,10 +219,10 @@ class _MainNavigationState extends State<MainNavigation> {
                 child: Container(
                   height: 72,
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerLowest,
+                    color: c.surfaceContainerLowest,
                     border: Border(
                       top: BorderSide(
-                        color: AppColors.borderBlack,
+                        color: c.borderBlack,
                         width: AppColors.borderWidth,
                       ),
                     ),
@@ -244,15 +272,15 @@ class _MainNavigationState extends State<MainNavigation> {
                             width: 60,
                             height: 60,
                             decoration: BoxDecoration(
-                              color: AppColors.primaryContainer,
+                              color: c.primaryContainer,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppColors.borderBlack,
+                                color: c.borderBlack,
                                 width: AppColors.borderWidth,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.borderBlack,
+                                  color: c.borderBlack,
                                   offset: Offset(2.5, 2.5),
                                   blurRadius: 0,
                                 ),
@@ -262,7 +290,7 @@ class _MainNavigationState extends State<MainNavigation> {
                               child: Icon(
                                 Icons.document_scanner_rounded,
                                 size: 28,
-                                color: AppColors.onPrimaryContainer,
+                                color: c.onPrimaryContainer,
                               ),
                             ),
                           ),
@@ -320,14 +348,14 @@ class _MainNavigationState extends State<MainNavigation> {
     final isSelected = _currentIndex == index;
     return GestureDetector(
       key: key,
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () => _selectTab(index),
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             icon,
-            color: isSelected ? AppColors.onSurface : AppColors.outline,
+            color: isSelected ? context.palette.onSurface : context.palette.outline,
             size: isSelected ? 26 : 24,
           ),
           const SizedBox(height: 2),
@@ -336,7 +364,7 @@ class _MainNavigationState extends State<MainNavigation> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              color: isSelected ? AppColors.onSurface : AppColors.outline,
+              color: isSelected ? context.palette.onSurface : context.palette.outline,
             ),
           ),
         ],

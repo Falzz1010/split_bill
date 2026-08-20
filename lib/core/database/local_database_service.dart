@@ -58,41 +58,9 @@ class LocalDatabaseService {
     }
   }
 
-  /// Menambahkan split bill baru ke dalam penyimpanan lokal APK.
-  Future<List<SplitBill>> addSplit(SplitBill newSplit) async {
-    final currentSplits = await loadSplits();
-    currentSplits.insert(0, newSplit);
-    await saveSplits(currentSplits);
-    return currentSplits;
-  }
-
-  /// Memperbarui split bill (misal: ubah item, status pelunasan anggota) secara permanen di HP.
-  Future<List<SplitBill>> updateSplit(SplitBill updatedSplit) async {
-    final currentSplits = await loadSplits();
-    final index = currentSplits.indexWhere((s) => s.id == updatedSplit.id);
-
-    if (index != -1) {
-      currentSplits[index] = updatedSplit;
-    } else {
-      currentSplits.insert(0, updatedSplit);
-    }
-
-    await saveSplits(currentSplits);
-    return currentSplits;
-  }
-
-  /// Menghapus split bill tertentu dari penyimpanan lokal.
-  Future<List<SplitBill>> deleteSplit(String splitId) async {
-    final currentSplits = await loadSplits();
-    currentSplits.removeWhere((s) => s.id == splitId);
-    await saveSplits(currentSplits);
-    return currentSplits;
-  }
-
-  /// Membersihkan seluruh data (Kembali ke database asli yang bersih / 0 data dummy).
-  Future<List<SplitBill>> clearAllData() async {
+  /// Mengosongkan penyimpanan lokal (Kembali ke database asli yang bersih / 0 data dummy).
+  Future<void> clearAllData() async {
     await saveSplits([]);
-    return [];
   }
 
   /// Mereset database lokal ke data contoh demo.

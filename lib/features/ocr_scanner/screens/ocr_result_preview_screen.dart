@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/models/split_model.dart';
+import '../../../core/services/gemini_service.dart';
+import '../../../core/settings/settings_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_l10n.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -19,6 +21,10 @@ class OcrResultPreviewScreen extends StatefulWidget {
   final String rawText;
   final ParsedReceiptResult parsed;
   final Uint8List? imageBytes;
+
+  /// true bila teks berasal dari fallback Gemini vision → teks sudah hasil AI,
+  /// tidak perlu refine otomatis lagi (hemat token).
+  final bool ocrViaGemini;
   final void Function(ParsedReceiptResult parsed) onConfirm;
 
   const OcrResultPreviewScreen({
@@ -27,6 +33,7 @@ class OcrResultPreviewScreen extends StatefulWidget {
     required this.parsed,
     required this.onConfirm,
     this.imageBytes,
+    this.ocrViaGemini = false,
   });
 
   @override
@@ -45,10 +52,22 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
   /// Mata uang asal struk (terdeteksi dari teks; null/IDR = rupiah).
   String? _currency;
 
+  bool _aiRefining = false;
+
   @override
   void initState() {
     super.initState();
     _currency = CurrencyRatesService.detectCurrency(widget.rawText);
+    // Alur hemat token: AI hanya rescue — otomatis refine bila OCR asli
+    // (ML Kit) hasilnya gagal diparse (0 item). Teks dari Gemini vision sudah
+    // AI, hasil parse bagus, atau tanpa key → tidak ada refine otomatis.
+    final s = SettingsService.instance;
+    final needsRescue = !widget.ocrViaGemini && widget.parsed.items.isEmpty;
+    if (needsRescue && s.useAiEnhancement && s.geminiApiKey.trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _aiRefine();
+      });
+    }
   }
 
   bool get _isForeign => _currency != null && _currency != 'IDR';
@@ -89,6 +108,61 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
           style: TextStyle(color: c.background),
         ),
         backgroundColor: c.onSurface,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Koreksi OCR lewat Gemini: perbaiki nama menu & harga, lalu parse ulang
+  /// dari hasil AI. Tanpa API key / gagal → kembali ke mode offline.
+  Future<void> _aiRefine() async {
+    final settings = SettingsService.instance;
+    if (settings.geminiApiKey.trim().isEmpty || !settings.useAiEnhancement) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tr('ocr_preview_ai_no_key')),
+          backgroundColor: context.palette.error,
+        ),
+      );
+      return;
+    }
+    setState(() => _aiRefining = true);
+    final result = await GeminiService.instance.refineReceiptWithAI(
+      _rawTextController.text,
+      currency: _currency ?? 'IDR',
+    );
+    if (!mounted) return;
+    setState(() => _aiRefining = false);
+    final c = context.palette;
+    if (result == null || result.items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tr('ocr_preview_ai_fail'), style: TextStyle(color: c.background)),
+          backgroundColor: c.error,
+        ),
+      );
+      return;
+    }
+    final subtotal = result.items.fold(0.0, (s, i) => s + i.lineTotal);
+    setState(() {
+      _parsed = ParsedReceiptResult(
+        merchantName: result.merchantName.isEmpty ? _parsed.merchantName : result.merchantName,
+        subtotal: subtotal,
+        tax: _parsed.tax,
+        serviceCharge: _parsed.serviceCharge,
+        totalAmount: subtotal + _parsed.tax + _parsed.serviceCharge,
+        items: result.items,
+      );
+      _items = List.of(result.items);
+      _titleController.text = _parsed.merchantName;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          tr('ocr_preview_ai_done').replaceAll('{n}', '${result.items.length}'),
+          style: TextStyle(color: c.background),
+        ),
+        backgroundColor: c.secondary,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -434,7 +508,7 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                     ),
                     const SizedBox(height: 18),
 
-                    // Teks mentah OCR + parse ulang
+                    // Teks mentah OCR + parse ulang + AI refine
                     Row(
                       children: [
                         Expanded(
@@ -457,6 +531,43 @@ class _OcrResultPreviewScreenState extends State<OcrResultPreviewScreen> {
                                 Text(
                                   tr('ocr_preview_reparse'),
                                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        GestureDetector(
+                          onTap: _aiRefining ? null : _aiRefine,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: c.primaryContainer,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: c.borderBlack, width: 1.5),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_aiRefining)
+                                  SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: c.onPrimaryContainer,
+                                    ),
+                                  )
+                                else
+                                  Icon(Icons.auto_awesome_rounded, size: 14, color: c.onPrimaryContainer),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _aiRefining ? tr('ocr_preview_ai_loading') : tr('ocr_preview_ai_refine'),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                    color: c.onPrimaryContainer,
+                                  ),
                                 ),
                               ],
                             ),

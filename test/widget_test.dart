@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fairsplit/main.dart';
+import 'package:fairsplit/core/settings/settings_service.dart';
 import 'package:fairsplit/core/theme/app_colors.dart';
 import 'package:fairsplit/features/onboarding/widgets/feature_tutorial_overlay.dart';
 
@@ -65,7 +66,10 @@ void main() {
 
   testWidgets('App renders smoke test', (WidgetTester tester) async {
     // Mock SharedPreferences agar SettingsService tidak menggantung di test.
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'settings_seen_onboarding': true,
+    });
+    await SettingsService.instance.load();
 
     await tester.pumpWidget(const FairSplitApp());
     // Splash screen menampilkan selama 4.2 detik + transisi 1 detik

@@ -11,7 +11,9 @@ import 'helpers/palette_test_wrapper.dart';
 void main() {
   testWidgets('Fresh install: tutorial tampil setelah splash selesai',
       (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'settings_seen_onboarding': true,
+    });
     await SettingsService.instance.load();
     expect(SettingsService.instance.tutorialNeeded, isTrue,
         reason: 'user baru belum pernah melihat tutorial');
@@ -27,6 +29,7 @@ void main() {
 
   testWidgets('Pengguna lama: tutorial tidak tampil', (tester) async {
     SharedPreferences.setMockInitialValues({
+      'settings_seen_onboarding': true,
       'settings_seen_tutorial_version': SettingsService.kTutorialVersion,
     });
     await SettingsService.instance.load();

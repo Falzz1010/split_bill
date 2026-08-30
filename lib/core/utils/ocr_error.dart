@@ -21,7 +21,20 @@ bool isMlKitModuleUnavailableError(Object error) {
   return keywords.any(raw.contains);
 }
 
-/// Memetakan error OCR ke pesan ramah pengguna: pesan khusus saat modul
-/// ML Kit tidak tersedia, pesan umum saat gagal baca struk biasa.
-String friendlyOcrError(Object error) =>
-    isMlKitModuleUnavailableError(error) ? tr('scan_mlkit_unavailable') : tr('scan_failed');
+/// Memetaka error OCR ke pesan ramah pengguna: pesan khusus saat modul
+/// ML Kit tidak tersedia, pesan khusus saat fallback Gemini gagal (key kosong
+/// vs API error), pesan umum saat gagal baca struk biasa.
+/// ponytail: friendlyOcrError error mapping is minimal;
+/// known ceiling: new Gemini error codes may require expansion
+String friendlyOcrError(Object error) {
+  final raw = error.toString();
+  if (raw.contains('GEMINI_NO_KEY')) return tr('scan_gemini_no_key');
+  if (raw.contains('GEMINI_FAIL')) return tr('scan_gemini_fail');
+  if (raw.contains('MODULE_MLKIT_UNAVAILABLE')) {
+    return tr('scan_mlkit_unavailable');
+  }
+  if (isMlKitModuleUnavailableError(error)) {
+    return tr('scan_mlkit_unavailable');
+  }
+  return tr('scan_failed');
+}

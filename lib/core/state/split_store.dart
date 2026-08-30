@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../database/local_database_service.dart';
 import '../models/split_model.dart';
+import '../settings/settings_service.dart';
 
 /// Menampung daftar split bill + pilihan aktif, dan menjadi satu-satunya
 /// sumber kebenaran data split di seluruh tab. Layar cukup memanggil method
@@ -21,7 +22,14 @@ class SplitStore extends ChangeNotifier {
   /// selalu memakai state terbaru).
   Future<void> _pendingSave = Future.value();
 
-  List<SplitBill> get splits => List.unmodifiable(_splits);
+  /// Semua split (untuk mode switch, internal)
+  List<SplitBill> get allSplits => List.unmodifiable(_splits);
+
+  /// Split yang difilter berdasarkan mode saat ini (personal/umkm)
+  List<SplitBill> get splits {
+    final mode = SettingsService.instance.appMode;
+    return _splits.where((s) => s.mode == mode).toList();
+  }
 
   /// True selama data awal belum selesai dimuat — layar menampilkan skeleton.
   bool get isLoading => _isLoading;
@@ -44,14 +52,28 @@ class SplitStore extends ChangeNotifier {
     final minShimmer = Future<void>.delayed(const Duration(milliseconds: 1500));
     _splits = await LocalDatabaseService.instance.loadSplits();
     await minShimmer;
+    // Listen to mode changes to refresh filtered list
+    SettingsService.instance.addListener(_onModeChanged);
     _selected = _splits.isNotEmpty ? _splits.first : null;
     _isLoading = false;
     notifyListeners();
   }
 
+  void _onModeChanged() {
+    // When mode changes, clear selection if it's from different mode
+    if (_selected != null && _selected!.mode != SettingsService.instance.appMode) {
+      _selected = _splits.isNotEmpty ? _splits.first : null;
+    }
+    notifyListeners();
+  }
+
   Future<void> add(SplitBill split) async {
-    _splits.insert(0, split);
-    _selected = split;
+    // Ensure new splits get current mode
+    final splitWithMode = split.mode == AppMode.personal
+        ? split.copyWith(mode: SettingsService.instance.appMode)
+        : split;
+    _splits.insert(0, splitWithMode);
+    _selected = splitWithMode;
     notifyListeners();
     await _persist();
   }

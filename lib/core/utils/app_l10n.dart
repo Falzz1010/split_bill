@@ -137,9 +137,20 @@ const Map<String, String> _id = {
   'scan_failed':
       'Gagal membaca struk. Coba lagi dengan pencahayaan lebih baik.',
   'scan_mlkit_unavailable':
-      'Modul OCR (ML Kit) belum tersedia di perangkat ini. Pastikan HP terhubung internet dan Google Play Services aktif, lalu coba lagi.',
+      'Modul OCR (ML Kit) belum tersedia di perangkat ini. Pastikan HP terhubung internet dan Google Play Services aktif, lalu coba lagi, atau pilih mode AI/Auto agar fallback ke Gemini.',
+  'scan_gemini_no_key':
+      'Scan gagal: OCR Google (ML Kit) tidak tersedia di perangkat ini dan API key Gemini belum diisi. Isi key di Pengaturan → Konfigurasi Google Gemini AI agar scan tetap bisa jalan.',
+  'scan_gemini_fail':
+      'Scan gagal: AI Gemini tidak merespons. Cek koneksi internet, kuota, dan key di Pengaturan.',
   'scan_processing2': 'AI Membaca Struk dengan Lottie...',
   'scan_smart': 'AI Smart Scanner',
+  'scan_mode_ocr': 'OCR',
+  'scan_mode_ai': 'AI',
+  'scan_mode_auto': 'Auto',
+  'tut_scan_mode_title': 'Pilih Mode Scan',
+  'tut_scan_mode_desc': 'OCR = ML Kit Google, offline, gratis tanpa token. AI = Gemini vision, paling akurat untuk struk buram. Auto = OCR dulu, AI baru dipakai kalau OCR gagal — hasil bagus & hemat token.',
+  'tut_scan_guide_title': 'Arahkan ke Struk',
+  'tut_scan_guide_desc': 'Tempatkan struk di dalam bingkai lalu tekan tombol kamera, atau pilih gambar dari galeri. Hasil scan bisa diperbaiki AI otomatis sebelum disimpan.',
 
   // OCR Result Preview
   'ocr_preview_title': 'Hasil Scan OCR',
@@ -156,6 +167,11 @@ const Map<String, String> _id = {
   'ocr_preview_foreign_currency': 'Struk dalam {code} — dikonversi ke IDR saat disimpan',
   'ocr_preview_image': 'Gambar Hasil Scan',
   'ocr_preview_image_tap': 'Ketuk untuk perbesar',
+  'ocr_preview_ai_refine': '✨ AI Smart Refine',
+  'ocr_preview_ai_loading': 'Gemini sedang memproses...',
+  'ocr_preview_ai_done': 'Dikoreksi oleh Gemini ({n} item)',
+  'ocr_preview_ai_fail': 'Gagal terhubung ke Gemini. Pakai mode offline.',
+  'ocr_preview_ai_no_key': 'API Key Gemini belum diisi. Tambahkan di Pengaturan.',
 
   // Settings
   'set_title': 'Pengaturan',
@@ -170,11 +186,18 @@ const Map<String, String> _id = {
   'set_db_clear_desc': 'Hapus struk contoh & mulai catat data asli Anda',
   'set_db_load': 'Muat Struk Contoh (Demo)',
   'set_db_load_desc': 'Isi kembali 3 struk contoh untuk keperluan demo',
+  'set_db_umkm_load': 'Muat Data Contoh UMKM (Demo)',
+  'set_db_umkm_load_desc': 'Isi 12 transaksi kasir contoh untuk fitur insight bisnis',
+  'set_db_umkm_confirm_title': 'Muat Data UMKM Demo?',
+  'set_db_umkm_confirm_desc':
+      'Semua transaksi UMKM akan diganti dengan 12 data contoh demo.',
+  'set_db_umkm_loaded': 'Data transaksi UMKM demo berhasil dimuat!',
   'set_db_cleared':
       'Database telah dibersihkan! Aplikasi kini menggunakan 0 data dummy.',
   'set_db_loaded': 'Data struk contoh demo berhasil dimuat ulang!',
   'set_help': 'Bantuan & Tentang',
   'set_tutorial': 'Lihat Tutorial',
+  'set_onboarding': 'Lihat Pengenalan (Onboarding)',
   'set_about': 'Tentang Aplikasi',
   'set_pick_currency': 'Pilih Mata Uang',
   'set_pick_language': 'Pilih Bahasa',
@@ -193,6 +216,27 @@ const Map<String, String> _id = {
       'Semua struk yang ada akan diganti dengan 3 struk contoh demo.',
   'set_db_confirm_ok': 'Ya, Lanjutkan',
   'set_version': 'v1.0.0 (Neo-Brutalist Edition)',
+  'set_ai': 'Konfigurasi Google Gemini AI',
+  'set_ai_desc':
+      'Pakai Gemini untuk koreksi hasil OCR & insight bisnis. Kosongkan API key untuk memakai mode offline (ML Kit + analisis lokal).',
+  'set_ai_key': 'Gemini API Key',
+  'set_ai_key_hint': 'AIza... (dari Google AI Studio)',
+  'set_ai_test': 'Tes Koneksi AI',
+  'set_ai_testing': 'Menghubungi Gemini...',
+  'set_ai_test_ok': 'Koneksi AI berhasil!',
+  'set_ai_test_fail': 'Gagal. Cek API key & koneksi internet.',
+  'set_ai_refine_toggle': 'AI Auto-Refine OCR',
+  'set_ai_refine_desc': 'Aktifkan tombol AI Smart Refine di hasil scan',
+  'dash_ai_title': '💡 AI Business Insight',
+  'dash_ai_subtitle': 'Asisten cerdas UMKM — analisis seluruh transaksi',
+  'dash_ai_analyze': 'Analisis Transaksi dengan AI',
+  'dash_ai_analyzing': 'Gemini sedang menganalisis...',
+  'dash_ai_gemini_badge': 'Gemini AI',
+  'dash_ai_local_badge': 'Analisis Lokal',
+  'dash_ai_top_items': 'Menu Terlaris',
+  'dash_ai_top_category': 'Kategori Terbesar',
+  'dash_ai_revenue': 'Total Transaksi',
+  'dash_ai_empty': 'Belum ada transaksi untuk dianalisis.',
   // Splash
   'splash_tagline': 'Hitung Cepat, Split Adil ⚡',
   'splash_loading': 'Memuat Data & Pengaturan...',
@@ -216,10 +260,64 @@ const Map<String, String> _id = {
   'tut2_settings_title': 'Pengaturan',
   'tut2_settings_desc': 'Atur mata uang, bahasa, dan mode gelap lewat tab ini.',
 
+  // UMKM Mode
+  'nav_kasir': 'Kasir',
+  'nav_omzet': 'Omzet',
+  'nav_shift': 'Laporan',
+  'nav_riwayat': 'Riwayat',
+  'umkm_owner': 'Pemilik Usaha',
+  'umkm_scan_now': 'Scan Struk Sekarang',
+  'umkm_revenue': 'Omzet',
+  'umkm_trans': 'Transaksi',
+  'umkm_today': 'Hari Ini',
+  'umkm_month': 'Bulan Ini',
+  'umkm_recent': 'Transaksi Terakhir',
+  'umkm_no_trans': 'Belum ada transaksi hari ini',
+  'umkm_transaksi_list': 'Riwayat Transaksi',
+  'umkm_transaksi_search': 'Cari transaksi, menu, kategori...',
+  'umkm_clear_filter': 'Reset',
+  'umkm_pick_category': 'Pilih Kategori',
+  'umkm_delete_title': 'Hapus Transaksi?',
+  'umkm_delete_desc': 'Transaksi "{name}" akan dihapus permanen.',
+  'umkm_deleted': 'Transaksi berhasil dihapus',
+  'umkm_updated': 'Transaksi berhasil diupdate',
+  'umkm_save': 'Simpan',
+  'umkm_inventory': 'Inventaris',
+  'umkm_inv_all': 'Semua Item',
+  'umkm_inv_alert': 'Stok Rendah',
+  'umkm_inv_fast': 'Fast Moving',
+  'umkm_inv_empty': 'Belum ada item inventaris',
+  'umkm_inv_no_alert': 'Semua stok aman',
+  'umkm_inv_no_data': 'Belum ada data penjualan',
+  'umkm_orang': 'orang',
+  'umkm_switch_personal': 'Mode Split Bill (Personal)',
+  'umkm_switch_umkm': 'Mode Kasir UMKM',
+
   // Common
   'common_ok': 'OK',
   'common_batal': 'Batal',
   'common_lunas': 'Lunas',
+
+  // Onboarding Welcome Screen
+  'onb_skip': 'Lewati',
+  'onb_next': 'Selanjutnya',
+  'onb_start': 'Mulai Sekarang',
+  'onb_welcome_title': 'Selamat Datang di Neobill',
+  'onb_welcome_desc':
+      'Scan struk belanja, bagi tagihan secara adil, dan dapatkan insight bisnis cerdas — semua dalam satu aplikasi.',
+  'onb_welcome_badge': 'Didukung oleh Google Gemini AI & ML Kit',
+  'onb_ocr_title': 'Scan Struk Cerdas',
+  'onb_ocr_desc':
+      'Foto struk → OCR otomatis baca nama menu & harga → AI koreksi salah baca → siap dibagi.',
+  'onb_umkm_title': 'Insight Bisnis UMKM',
+  'onb_umkm_desc':
+      'Omzet real-time, tren menu terlaris, prediksi penjualan, dan analisis profitabilitas — semuanya otomatis.',
+  'onb_api_title': 'Siap Memulai?',
+  'onb_api_desc':
+      'Masukkan Gemini API Key untuk fitur AI lengkap. Kosongkan juga bisa — fitur offline tetap jalan.',
+  'onb_api_hint': 'AIza... (opsional)',
+  'onb_api_note':
+      'Dapatkan gratis di aistudio.google.com. Bisa diisi nanti di Pengaturan.',
 };
 
 const Map<String, String> _en = {
@@ -350,9 +448,20 @@ const Map<String, String> _en = {
   'scan_camera_error': 'Camera unavailable. Use gallery or simulation button.',
   'scan_failed': 'Failed to read receipt. Try again with better lighting.',
   'scan_mlkit_unavailable':
-      'The OCR module (ML Kit) is not available on this device. Make sure your phone is online and Google Play Services is up to date, then try again.',
+      'The OCR module (ML Kit) is not available on this device. Make sure your phone is online and Google Play Services is up to date, then try again, or choose AI/Auto mode to fall back to Gemini.',
+  'scan_gemini_no_key':
+      'Scan failed: Google OCR (ML Kit) is not available on this device and no Gemini API key is set. Add your key in Settings → Google Gemini AI Configuration so scanning keeps working.',
+  'scan_gemini_fail':
+      'Scan failed: Gemini AI did not respond. Check internet, quota, and your key in Settings.',
   'scan_processing2': 'AI reading receipt...',
   'scan_smart': 'AI Smart Scanner',
+  'scan_mode_ocr': 'OCR',
+  'scan_mode_ai': 'AI',
+  'scan_mode_auto': 'Auto',
+  'tut_scan_mode_title': 'Choose Scan Mode',
+  'tut_scan_mode_desc': 'OCR = Google ML Kit, offline, free (no tokens). AI = Gemini vision, most accurate for blurry receipts. Auto = OCR first, AI only when OCR fails — great result, low token usage.',
+  'tut_scan_guide_title': 'Point at the Receipt',
+  'tut_scan_guide_desc': 'Place the receipt inside the frame and press the camera button, or pick an image from the gallery. The scan result can be auto-corrected by AI before saving.',
 
   // OCR Result Preview
   'ocr_preview_title': 'OCR Scan Result',
@@ -368,6 +477,11 @@ const Map<String, String> _en = {
   'ocr_preview_foreign_currency': 'Receipt in {code} — converted to IDR when saved',
   'ocr_preview_image': 'Scanned Image',
   'ocr_preview_image_tap': 'Tap to enlarge',
+  'ocr_preview_ai_refine': '✨ AI Smart Refine',
+  'ocr_preview_ai_loading': 'Gemini is processing...',
+  'ocr_preview_ai_done': 'Corrected by Gemini ({n} items)',
+  'ocr_preview_ai_fail': 'Cannot reach Gemini. Using offline mode.',
+  'ocr_preview_ai_no_key': 'No Gemini API key. Add one in Settings.',
 
   // Settings
   'set_title': 'Settings',
@@ -382,10 +496,17 @@ const Map<String, String> _en = {
   'set_db_clear_desc': 'Remove sample receipts & start recording your own',
   'set_db_load': 'Load Sample Receipts (Demo)',
   'set_db_load_desc': 'Restore 3 sample receipts for demo purposes',
+  'set_db_umkm_load': 'Load UMKM Sample Data (Demo)',
+  'set_db_umkm_load_desc': 'Load 12 sample cashier transactions for business insights',
+  'set_db_umkm_confirm_title': 'Load UMKM Demo Data?',
+  'set_db_umkm_confirm_desc':
+      'All UMKM transactions will be replaced with 12 sample entries.',
+  'set_db_umkm_loaded': 'UMKM demo data loaded successfully!',
   'set_db_cleared': 'Database cleared! App now uses 0 dummy data.',
   'set_db_loaded': 'Demo sample receipts loaded successfully!',
   'set_help': 'Help & About',
   'set_tutorial': 'View Tutorial',
+  'set_onboarding': 'Lihat Pengenalan (Onboarding)',
   'set_about': 'About App',
   'set_pick_currency': 'Select Currency',
   'set_pick_language': 'Select Language',
@@ -404,6 +525,60 @@ const Map<String, String> _en = {
       'All existing receipts will be replaced with 3 sample receipts.',
   'set_db_confirm_ok': 'Yes, Continue',
   'set_version': 'v1.0.0 (Neo-Brutalist Edition)',
+  'set_ai': 'Google Gemini AI Configuration',
+  'set_ai_desc':
+      'Use Gemini to refine OCR results & business insights. Leave API key empty to use offline mode (ML Kit + local analysis).',
+  'set_ai_key': 'Gemini API Key',
+  'set_ai_key_hint': 'AIza... (from Google AI Studio)',
+  'set_ai_test': 'Test AI Connection',
+  'set_ai_testing': 'Contacting Gemini...',
+  'set_ai_test_ok': 'AI connection OK!',
+  'set_ai_test_fail': 'Failed. Check API key & internet connection.',
+  'set_ai_refine_toggle': 'AI Auto-Refine OCR',
+  'set_ai_refine_desc': 'Enable the AI Smart Refine button on scan results',
+  'dash_ai_title': '💡 AI Business Insight',
+  'dash_ai_subtitle': 'UMKM smart assistant — analyzes all transactions',
+  'dash_ai_analyze': 'Analyze Transactions with AI',
+  'dash_ai_analyzing': 'Gemini is analyzing...',
+  'dash_ai_gemini_badge': 'Gemini AI',
+  'dash_ai_local_badge': 'Local Analysis',
+  'dash_ai_top_items': 'Top Items',
+  'dash_ai_top_category': 'Top Category',
+  'dash_ai_revenue': 'Total Revenue',
+  'dash_ai_empty': 'No transactions to analyze yet.',
+
+  // UMKM Mode
+  'nav_kasir': 'Cashier',
+  'nav_omzet': 'Revenue',
+  'nav_shift': 'Report',
+  'nav_riwayat': 'History',
+  'umkm_owner': 'Business Owner',
+  'umkm_scan_now': 'Scan Receipt Now',
+  'umkm_revenue': 'Revenue',
+  'umkm_trans': 'Transactions',
+  'umkm_today': 'Today',
+  'umkm_month': 'This Month',
+  'umkm_recent': 'Recent Transactions',
+  'umkm_no_trans': 'No transactions today yet',
+  'umkm_transaksi_list': 'Transaction History',
+  'umkm_transaksi_search': 'Search transactions, menu, category...',
+  'umkm_clear_filter': 'Reset',
+  'umkm_pick_category': 'Pick Category',
+  'umkm_delete_title': 'Delete Transaction?',
+  'umkm_delete_desc': 'Transaction "{name}" will be permanently deleted.',
+  'umkm_deleted': 'Transaction deleted successfully',
+  'umkm_updated': 'Transaction updated successfully',
+  'umkm_save': 'Save',
+  'umkm_inventory': 'Inventory',
+  'umkm_inv_all': 'All Items',
+  'umkm_inv_alert': 'Low Stock',
+  'umkm_inv_fast': 'Fast Moving',
+  'umkm_inv_empty': 'No inventory items yet',
+  'umkm_inv_no_alert': 'All stock is safe',
+  'umkm_inv_no_data': 'No sales data yet',
+  'umkm_orang': 'people',
+  'umkm_switch_personal': 'Split Bill Mode (Personal)',
+  'umkm_switch_umkm': 'UMKM Cashier Mode',
 
   // Splash
   'splash_tagline': 'Split Bill, Fair & Easy ⚡',
@@ -431,4 +606,25 @@ const Map<String, String> _en = {
   'common_ok': 'OK',
   'common_batal': 'Cancel',
   'common_lunas': 'Settled',
+
+  // Onboarding Welcome Screen
+  'onb_skip': 'Skip',
+  'onb_next': 'Next',
+  'onb_start': 'Get Started',
+  'onb_welcome_title': 'Welcome to Neobill',
+  'onb_welcome_desc':
+      'Scan receipts, split bills fairly, and get smart business insights — all in one app.',
+  'onb_welcome_badge': 'Powered by Google Gemini AI & ML Kit',
+  'onb_ocr_title': 'Smart Receipt Scan',
+  'onb_ocr_desc':
+      'Photo receipt → OCR reads items & prices → AI fixes errors → ready to split.',
+  'onb_umkm_title': 'UMKM Business Insights',
+  'onb_umkm_desc':
+      'Real-time revenue, top menu trends, sales forecast, and profitability analysis — all automatic.',
+  'onb_api_title': 'Ready to Start?',
+  'onb_api_desc':
+      'Enter your Gemini API Key for full AI features. Leave empty — offline features still work.',
+  'onb_api_hint': 'AIza... (optional)',
+  'onb_api_note':
+      'Get yours free at aistudio.google.com. You can add it later in Settings.',
 };

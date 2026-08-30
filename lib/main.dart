@@ -6,6 +6,7 @@ import 'core/settings/settings_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
 import 'core/utils/currency_rates.dart';
+import 'core/services/inventory_service.dart';
 import 'features/splash/screens/splash_screen.dart';
 
 void main() async {
@@ -13,7 +14,7 @@ void main() async {
   await initializeDateFormatting('id_ID', null);
   await SettingsService.instance.load();
   await CurrencyRatesService.instance.load();
-  // Auto-update kurs hari ini di latar belakang (tidak menunda startup).
+  await InventoryService.instance.load();
   unawaited(CurrencyRatesService.instance.refreshIfStale());
   AppPalette.applyDark(SettingsService.instance.darkMode);
   runApp(const FairSplitApp());

@@ -4,9 +4,14 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/neo_card.dart';
 import '../../../shared/widgets/neo_paw_logo.dart';
 import '../../../core/state/split_store.dart';
+import '../../../core/state/transaksi_umkm_store.dart';
 import '../../../core/settings/settings_service.dart';
+import '../../../core/services/gemini_service.dart';
 import '../../../core/utils/currency_rates.dart';
 import '../../../shared/widgets/neo_confirm_dialog.dart';
+import '../../../shared/widgets/mode_switch_splash.dart';
+import '../../onboarding/screens/onboarding_screen.dart';
+import '../../umkm/screens/umkm_demo_screen.dart' as demo;
 
 class PengaturanScreen extends StatefulWidget {
   /// Dipanggil saat pengguna memilih "Lihat Tutorial" di bagian Bantuan.
@@ -20,6 +25,33 @@ class PengaturanScreen extends StatefulWidget {
 
 class _PengaturanScreenState extends State<PengaturanScreen> {
   bool _refreshingRates = false;
+  bool _aiTesting = false;
+  bool _obscureKey = true;
+  final TextEditingController _aiKeyController =
+      TextEditingController(text: SettingsService.instance.geminiApiKey);
+
+  @override
+  void dispose() {
+    _aiKeyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _testAiConnection() async {
+    setState(() => _aiTesting = true);
+    final ok = await GeminiService.instance.testConnection();
+    if (!mounted) return;
+    setState(() => _aiTesting = false);
+    final c = context.palette;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok ? tr('set_ai_test_ok') : tr('set_ai_test_fail'),
+          style: TextStyle(color: c.background),
+        ),
+        backgroundColor: ok ? c.secondary : c.error,
+      ),
+    );
+  }
 
   Future<void> _pickCurrency() async {
     final c = context.palette;
@@ -177,6 +209,34 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     children: [
                       _buildRowTile(
                         context,
+                        title: tr('umkm_switch_umkm'),
+                        onTap: null,
+                        trailing: Switch.adaptive(
+                          value: SettingsService.instance.appMode == AppMode.umkm,
+                          activeTrackColor: context.palette.secondaryContainer,
+                          activeThumbColor: context.palette.secondary,
+                          onChanged: (val) async {
+                            final target = val ? AppMode.umkm : AppMode.personal;
+                            // Show splash lalu switch mode
+                            await ModeSwitchSplash.show(context, target);
+                            if (context.mounted) {
+                              SettingsService.instance.setAppMode(target);
+                            }
+                          },
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        child: Text(
+                          SettingsService.instance.appMode == AppMode.umkm
+                              ? 'Mode Kasir: Dashboard omzet, laporan shift, PPN auto-on'
+                              : 'Mode Personal: Split bill teman/keluarga',
+                          style: TextStyle(fontSize: 11, color: context.palette.onSurfaceVariant),
+                        ),
+                      ),
+                      _buildRowDivider(),
+                      _buildRowTile(
+                        context,
                         title: tr('set_currency'),
                         onTap: _pickCurrency,
                         trailing: Row(
@@ -265,6 +325,142 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                           activeThumbColor: context.palette.secondary,
                           onChanged: (val) =>
                               SettingsService.instance.setDarkMode(val),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Section: Konfigurasi Google Gemini AI
+                  _buildSectionCard(
+                    context,
+                    icon: Icons.auto_awesome_rounded,
+                    title: tr('set_ai'),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
+                        child: Text(
+                          tr('set_ai_desc'),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.palette.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+                        child: TextField(
+                          controller: _aiKeyController,
+                          obscureText: _obscureKey,
+                          onChanged: (v) =>
+                              SettingsService.instance.setGeminiApiKey(v),
+                          decoration: InputDecoration(
+                            labelText: tr('set_ai_key'),
+                            hintText: tr('set_ai_key_hint'),
+                            filled: true,
+                            fillColor: Colors.white,
+                            isDense: true,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: context.palette.borderBlack,
+                                width: 1.5,
+                              ),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureKey
+                                    ? Icons.visibility_rounded
+                                    : Icons.visibility_off_rounded,
+                                size: 18,
+                                color: context.palette.onSurfaceVariant,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _obscureKey = !_obscureKey),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: _aiTesting ? null : _testAiConnection,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: context.palette.secondaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: context.palette.borderBlack,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (_aiTesting)
+                                  SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: context.palette.borderBlack,
+                                    ),
+                                  )
+                                else
+                                  Icon(
+                                    Icons.wifi_tethering_rounded,
+                                    size: 16,
+                                    color: context.palette.borderBlack,
+                                  ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _aiTesting
+                                      ? tr('set_ai_testing')
+                                      : tr('set_ai_test'),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      _buildRowDivider(),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    tr('set_ai_refine_toggle'),
+                                    style: Theme.of(context).textTheme.labelLarge,
+                                  ),
+                                  Text(
+                                    tr('set_ai_refine_desc'),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: context.palette.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch.adaptive(
+                              value: SettingsService.instance.useAiEnhancement,
+                              activeTrackColor: context.palette.secondaryContainer,
+                              activeThumbColor: context.palette.secondary,
+                              onChanged: (val) =>
+                                  SettingsService.instance.setUseAiEnhancement(val),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -543,6 +739,130 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             ),
                           ),
                         ),
+                        // UMKM Demo button — only visible in UMKM mode
+                        if (SettingsService.instance.appMode == AppMode.umkm) ...[
+                          Divider(
+                            height: 16,
+                            thickness: 1.5,
+                            color: context.palette.outlineVariant,
+                          ),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () async {
+                              final confirmed = await showConfirmDialog(
+                                context,
+                                title: tr('set_db_umkm_confirm_title'),
+                                message: tr('set_db_umkm_confirm_desc'),
+                                confirmLabel: tr('set_db_confirm_ok'),
+                              );
+                              if (!confirmed || !context.mounted) return;
+                              await TransaksiUmkmStore.instance.loadDemo();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      tr('set_db_umkm_loaded'),
+                                      style: TextStyle(
+                                        color: context.palette.background,
+                                      ),
+                                    ),
+                                    backgroundColor: context.palette.secondary,
+                                  ),
+                                );
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 4,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.store_rounded,
+                                    color: context.palette.secondary,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          tr('set_db_umkm_load'),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        SizedBox(height: 2),
+                                        Text(
+                                          tr('set_db_umkm_load_desc'),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: context.palette.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Demo Mode button
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const demo.DemoModeScreen(),
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 4,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.play_circle_rounded,
+                                    color: context.palette.primary,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Demo Mode',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        SizedBox(height: 2),
+                                        Text(
+                                          'Auto-play semua fitur untuk presentasi',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: context.palette.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -554,6 +874,18 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     icon: Icons.help_outline_rounded,
                     title: tr('set_help'),
                     children: [
+                      _buildRowTile(
+                        context,
+                        title: tr('set_onboarding'),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const OnboardingScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
                       _buildRowTile(
                         context,
                         title: tr('set_tutorial'),

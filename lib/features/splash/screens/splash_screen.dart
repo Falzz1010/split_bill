@@ -5,6 +5,7 @@ import '../../../core/settings/settings_service.dart';
 import '../../../core/utils/app_l10n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/neo_paw_logo.dart';
+import '../../onboarding/screens/onboarding_screen.dart';
 import '../../../main_navigation.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -71,11 +72,14 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _navigateToMain() {
+    final showOnboarding = SettingsService.instance.onboardingNeeded;
     final showTutorial = SettingsService.instance.tutorialNeeded;
+    final destination = showOnboarding
+        ? const OnboardingScreen()
+        : MainNavigation(showFeatureTutorial: showTutorial);
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            MainNavigation(showFeatureTutorial: showTutorial),
+        pageBuilder: (context, animation, secondaryAnimation) => destination,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final curvedAnimation = CurvedAnimation(
             parent: animation,

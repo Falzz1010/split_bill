@@ -1,3 +1,5 @@
+import 'package:fairsplit/core/settings/settings_service.dart';
+
 class Member {
   final String id;
   final String name;
@@ -113,6 +115,7 @@ class SplitBill {
   final bool isCompleted;
   final List<Member> members;
   final List<ReceiptItem> items;
+  final AppMode mode;
 
   SplitBill({
     required this.id,
@@ -127,6 +130,7 @@ class SplitBill {
     required this.isCompleted,
     required this.members,
     required this.items,
+    this.mode = AppMode.personal,
   });
 
   int get paidCount => members.where((m) => m.isPaid).length;
@@ -162,6 +166,7 @@ class SplitBill {
     bool? isCompleted,
     List<Member>? members,
     List<ReceiptItem>? items,
+    AppMode? mode,
   }) => SplitBill(
     id: id,
     title: title ?? this.title,
@@ -175,6 +180,7 @@ class SplitBill {
     isCompleted: isCompleted ?? this.isCompleted,
     members: members ?? this.members,
     items: items ?? this.items,
+    mode: mode ?? this.mode,
   );
 
   Map<String, dynamic> toJson() => {
@@ -188,6 +194,7 @@ class SplitBill {
     'discount': discount,
     'totalAmount': totalAmount,
     'isCompleted': isCompleted,
+    'mode': mode.index,
     'members': members.map((m) => m.toJson()).toList(),
     'items': items.map((i) => i.toJson()).toList(),
   };
@@ -199,6 +206,7 @@ class SplitBill {
     } catch (_) {
       date = DateTime.now();
     }
+    final modeIndex = json['mode'] as int? ?? 0;
     return SplitBill(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Untitled',
@@ -210,6 +218,7 @@ class SplitBill {
       discount: (json['discount'] as num?)?.toDouble() ?? 0.0,
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
       isCompleted: json['isCompleted'] as bool? ?? false,
+      mode: AppMode.values[modeIndex.clamp(0, AppMode.values.length - 1)],
       members: (json['members'] as List<dynamic>?)
               ?.map((m) => Member.fromJson(m as Map<String, dynamic>))
               .toList() ??

@@ -5,15 +5,18 @@ import 'dart:ui' as ui;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/utils/app_l10n.dart';
 import '../../../core/utils/currency_rates.dart';
 import '../../../core/utils/ocr_error.dart';
+import '../../../core/settings/settings_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/neo_lottie_loader.dart';
 import '../../../core/utils/receipt_parser.dart';
 import '../services/ocr_service.dart';
+import '../../../core/services/gemini_service.dart';
+import '../../onboarding/widgets/feature_tutorial_overlay.dart';
+import 'ocr_annotated_screen.dart';
 import 'ocr_result_preview_screen.dart';
 
 class ScannerScreen extends StatefulWidget {
@@ -38,6 +41,13 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
   bool _isScanning = false;
   bool _cameraError = false;
   CameraController? _controller;
+
+  /// Mode scan aktif: 'ocr' | 'ai' | 'auto' (default dari Pengaturan).
+  String _mode = SettingsService.instance.scanMode;
+
+  /// Tutorial mode scan (versi 2) — ditampilkan sekali di layar scanner.
+  final GlobalKey _modeChipsKey = GlobalKey();
+  bool _showScanTutorial = SettingsService.instance.scanTutorialNeeded;
 
   @override
   void initState() {
@@ -98,13 +108,11 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     setState(() => _isScanning = true);
     try {
       final picture = await controller.takePicture();
-      final (text, previewBytes) = await _recognizeCropped(picture.path);
-      _finishWithText(text, previewBytes);
+      final (text, ocrResult, previewBytes, viaGemini) = await _recognizeCropped(picture.path);
+      _finishWithText(text, previewBytes: previewBytes, viaGemini: viaGemini, ocrResult: ocrResult);
     } catch (e, st) {
       debugPrint('OCR_CAMERA_ERROR: $e\n$st');
       if (!mounted) return;
-      // Modul ML Kit tidak tersedia → retry tidak akan membantu,
-      // langsung tampilkan pesan yang jelas.
       if (isMlKitModuleUnavailableError(e)) {
         setState(() => _isScanning = false);
         _showError(friendlyOcrError(e));
@@ -123,10 +131,14 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     }
   }
 
-  /// Crop foto ke area frame scan (kotak panduan) lalu OCR dari hasil crop.
-  /// Mengembalikan (teks OCR, bytes PNG hasil crop) agar bisa ditampilkan
-  /// sebagai pratinjau. Gagal crop → fallback OCR dari file asli tanpa gambar.
-  Future<(String, Uint8List?)> _recognizeCropped(String path) async {
+  /// Crop foto ke area frame scan lalu OCR dari hasil crop.
+  /// Mengembalikan (teks OCR, OcrResult dengan bounding boxes, bytes PNG hasil crop, apakah lewat Gemini).
+  /// Gagal crop → fallback OCR dari file asli tanpa gambar.
+  Future<(String, OcrResult?, Uint8List?, bool)> _recognizeCropped(String path) async {
+    if (_mode == 'ai') {
+      final (text, viaGemini) = await _recognizeText(path);
+      return (text, null, null, viaGemini);
+    }
     ui.Image? cropped;
     try {
       cropped = await _cropToScanFrame(path);
@@ -136,28 +148,30 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
           final pngData = await cropped.toByteData(format: ui.ImageByteFormat.png);
           png = pngData?.buffer.asUint8List();
         } catch (_) {}
-        final data = await cropped.toByteData(format: ui.ImageByteFormat.rawRgba);
+        final data = await cropped.toByteData(format: ui.ImageByteFormat.png);
         if (data != null) {
-          final input = InputImage.fromBitmap(
-            bitmap: data.buffer.asUint8List(),
-            width: cropped.width,
-            height: cropped.height,
+          final tmpFile = File(
+            '${Directory.systemTemp.path}/ocr_crop_${DateTime.now().millisecondsSinceEpoch}.png',
           );
-          final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+          await tmpFile.writeAsBytes(data.buffer.asUint8List());
           try {
-            final result = await recognizer.processImage(input);
-            debugPrint('OCR_RECOGNIZE_CROP done ${cropped.width}x${cropped.height} textLen=${result.text.length}');
-            debugPrint('OCR_RAW_TEXT<<< ${result.text} >>>OCR_RAW_TEXT');
-            return (result.text, png);
-          } finally {
-            await recognizer.close();
+            final ocrResult = await OcrService.recognizeWithBoxes(tmpFile.path);
+            debugPrint('OCR_RECOGNIZE_CROP done ${cropped.width}x${cropped.height} textLen=${ocrResult.text.length}');
+            debugPrint('OCR_RAW_TEXT<<< ${ocrResult.text} >>>OCR_RAW_TEXT');
+            return (ocrResult.text, ocrResult, png, false);
+          } catch (e) {
+            debugPrint('OCR_RECOGNIZE_WITH_BOXES_ERROR: $e');
+            final (text, viaGemini) = await _recognizeText(path);
+            return (text, null, null, viaGemini);
           }
         }
       }
-      return (await _recognizeText(path), null);
+      final (text, viaGemini) = await _recognizeText(path);
+      return (text, null, null, viaGemini);
     } catch (e, st) {
       debugPrint('OCR_CROP_RECOGNIZE_ERROR: $e\n$st');
-      return (await _recognizeText(path), null);
+      final (text, viaGemini) = await _recognizeText(path);
+      return (text, null, null, viaGemini);
     } finally {
       cropped?.dispose();
     }
@@ -223,13 +237,17 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
       if (crop.width < 48 || crop.height < 48) return null;
 
       // Gambar ulang hasil crop dengan filter kontras + kecerahan.
+      // Gunakan warna hijau-keren untuk struktur struk Indonesia (teks hitam pada fond putih).
+      // ponytail: contrast matrix tuned for Indonesian thermal receipts;
+      // may need adjustment for different paper colors/lighting
+      // upgrade: per-account contrast presets if throughput matters
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
       final paint = Paint()
         ..colorFilter = const ui.ColorFilter.matrix(<double>[
-          1.35, 0, 0, 0, 8, //
-          0, 1.35, 0, 0, 8, //
-          0, 0, 1.35, 0, 8, //
+          1.2, 0, 0, 0, 15, // increase red slightly
+          0, 1.3, 0, 0, 20, // boost green more for Indonesian receipts
+          0, 0, 1.2, 0, 10, // boost blue slightly
           0, 0, 0, 1, 0, //
         ]);
       canvas.drawImageRect(
@@ -255,8 +273,8 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     if (!mounted) return;
     setState(() => _isScanning = true);
     try {
-      final text = await _recognizeText(path);
-      _finishWithText(text, previewBytes);
+      final (text, viaGemini) = await _recognizeText(path);
+      _finishWithText(text, previewBytes: previewBytes, viaGemini: viaGemini);
     } catch (e, st) {
       debugPrint('OCR_RETRY_ERROR: $e\n$st');
       if (mounted) {
@@ -278,18 +296,50 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     final bytes = await picked.length();
     debugPrint('OCR_GALLERY_PICKED path=${picked.path} bytes=$bytes');
     setState(() => _isScanning = true);
-    // Baca bytes gambar untuk pratinjau di layar preview.
     Uint8List? previewBytes;
     try {
       previewBytes = await File(picked.path).readAsBytes();
     } catch (_) {}
     try {
-      final text = await _recognizeText(picked.path);
-      _finishWithText(text, previewBytes);
+      // Coba OCR dengan bounding boxes.
+      if (_mode != 'ai') {
+        try {
+          final ocrResult = await OcrService.recognizeWithBoxes(picked.path);
+          final currency = CurrencyRatesService.detectCurrency(ocrResult.text) ?? 'IDR';
+          final parsed = ReceiptParser.parseText(ocrResult.text, currency: currency);
+          if (mounted) {
+            setState(() => _isScanning = false);
+            if (previewBytes != null) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => OcrAnnotatedScreen(
+                    imageBytes: previewBytes!,
+                    ocrResult: ocrResult,
+                    rawText: ocrResult.text,
+                    parsed: parsed,
+                    onConfirm: (confirmed) {
+                      Navigator.of(context).pop();
+                      if (widget.onScanWithResult != null) {
+                        widget.onScanWithResult!(confirmed);
+                      } else {
+                        widget.onScanComplete();
+                      }
+                    },
+                  ),
+                ),
+              );
+              return;
+            }
+          }
+        } catch (e) {
+          debugPrint('OCR_GALLERY_WITH_BOXES_ERROR: $e');
+        }
+      }
+      // Fallback: OCR tanpa bounding boxes.
+      final (text, viaGemini) = await _recognizeText(picked.path);
+      _finishWithText(text, previewBytes: previewBytes, viaGemini: viaGemini);
     } catch (e, st) {
       debugPrint('OCR_GALLERY_ERROR: $e\n$st');
-      // Modul ML Kit tidak tersedia → retry tidak akan membantu,
-      // langsung tampilkan pesan yang jelas.
       if (isMlKitModuleUnavailableError(e)) {
         if (mounted) {
           setState(() => _isScanning = false);
@@ -301,20 +351,82 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     }
   }
 
-  Future<String> _recognizeText(String path) => OcrService.recognizeText(path);
+  /// OCR sesuai mode: 'ocr' = ML Kit saja (offline, 0 token), 'ai' = Gemini
+  /// vision saja, 'auto' = ML Kit dulu lalu fallback Gemini (hemat token).
+  /// Mengembalikan (teks, apakah lewat Gemini).
+  Future<(String, bool)> _recognizeText(String path) async {
+    final mode = _mode;
+    if (mode == 'ai') {
+      return (await _recognizeWithGemini(path), true);
+    }
+    try {
+      final text = await OcrService.recognizeText(path);
+      return (text, false);
+    } on Exception catch (e) {
+      if (mode == 'ocr' && e.toString().contains('MODULE_MLKIT_UNAVAILABLE')) {
+        // Mode OCR: tanpa fallback — tunjuk pesan modul tidak tersedia
+        // (bukan "cahaya kurang" yang menyesatkan).
+        throw Exception('MODULE_MLKIT_UNAVAILABLE');
+      }
+      debugPrint('OCR_MLKIT_FAILED: $e');
+      return (await _recognizeWithGemini(path), true);
+    }
+  }
+
+  Future<String> _recognizeWithGemini(String path) async {
+    if (SettingsService.instance.geminiApiKey.trim().isEmpty) {
+      throw Exception('GEMINI_NO_KEY');
+    }
+    final bytes = await File(path).readAsBytes();
+    final lower = path.toLowerCase();
+    final mime = lower.endsWith('.png') ? 'image/png' : 'image/jpeg';
+    final text =
+        await GeminiService.instance.extractTextFromImage(bytes, mimeType: mime);
+    if (text == null || text.isEmpty) {
+      throw Exception('GEMINI_FAIL');
+    }
+    debugPrint('OCR_GEMINI_FALLBACK_OK textLen=${text.length}');
+    return text;
+  }
 
   /// Menampilkan layar preview hasil OCR agar bisa dikoreksi sebelum dipakai.
-  void _finishWithText(String rawText, [Uint8List? previewBytes]) {
+  void _finishWithText(String rawText, {Uint8List? previewBytes, bool viaGemini = false, OcrResult? ocrResult}) {
     if (!mounted) return;
     setState(() => _isScanning = false);
     final currency = CurrencyRatesService.detectCurrency(rawText) ?? 'IDR';
     final parsed = ReceiptParser.parseText(rawText, currency: currency);
+
+    // Punya bounding box → gunakan OcrAnnotatedScreen (visual).
+    if (ocrResult != null && previewBytes != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OcrAnnotatedScreen(
+            imageBytes: previewBytes,
+            ocrResult: ocrResult,
+            rawText: rawText,
+            parsed: parsed,
+            onConfirm: (confirmed) {
+              Navigator.of(context).pop();
+              if (widget.onScanWithResult != null) {
+                widget.onScanWithResult!(confirmed);
+              } else {
+                widget.onScanComplete();
+              }
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Fallback: tanpa bounding box → OcrResultPreviewScreen (teks saja).
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => OcrResultPreviewScreen(
           rawText: rawText,
           parsed: parsed,
           imageBytes: previewBytes,
+          ocrViaGemini: viaGemini,
           onConfirm: (confirmed) {
             Navigator.of(context).pop();
             if (widget.onScanWithResult != null) {
@@ -353,6 +465,63 @@ Grand Total 150.000
         _finishWithText(simulatedOcrText);
       }
     });
+  }
+
+  /// Pilihan mode scan: OCR (offline), AI (Gemini), Auto (gabungan hemat token).
+  Widget _modeChips() {
+    final c = context.palette;
+    Widget chip(String mode, String label, IconData icon) {
+      final active = _mode == mode;
+      return GestureDetector(
+        onTap: _isScanning
+            ? null
+            : () {
+                setState(() => _mode = mode);
+                SettingsService.instance.setScanMode(mode);
+              },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: active ? c.primaryContainer : c.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: c.borderBlack, width: 1.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon,
+                  size: 13,
+                  color: active ? c.onPrimaryContainer : c.onSurfaceVariant),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  color: active ? c.onPrimaryContainer : c.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        chip('ocr', tr('scan_mode_ocr'), Icons.phonelink_erase_rounded),
+        const SizedBox(width: 6),
+        chip('ai', tr('scan_mode_ai'), Icons.auto_awesome_rounded),
+        const SizedBox(width: 6),
+        chip('auto', tr('scan_mode_auto'), Icons.bolt_rounded),
+      ],
+    );
+  }
+
+  Future<void> _finishScanTutorial() async {
+    await SettingsService.instance.markScanTutorialSeen();
+    if (mounted) setState(() => _showScanTutorial = false);
   }
 
   void _showError(String message) {
@@ -492,22 +661,24 @@ Grand Total 150.000
 
           // Top Action Controls Bar
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: widget.onClose,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: c.surfaceContainerLowest,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: c.borderBlack, width: 2),
-                      ),
-                      child: Icon(Icons.close, color: c.onSurface),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                        onTap: widget.onClose,
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: c.surfaceContainerLowest,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: c.borderBlack, width: 2),
+                          ),
+                          child: Icon(Icons.close, color: c.onSurface),
                     ),
                   ),
                   Container(
@@ -542,9 +713,25 @@ Grand Total 150.000
                     ),
                   ),
                 ],
-              ),
+                  ),
+                ),
+                Container(key: _modeChipsKey, child: _modeChips()),
+              ],
             ),
           ),
+
+          // Tutorial mode scan (sekali saja per versi).
+          if (_showScanTutorial && _modeChipsKey.currentContext != null)
+            FeatureTutorialOverlay(
+              steps: [
+                FeatureTutorialStep(
+                  key: _modeChipsKey,
+                  titleKey: 'tut_scan_mode_title',
+                  descKey: 'tut_scan_mode_desc',
+                ),
+              ],
+              onFinish: _finishScanTutorial,
+            ),
 
           // Bottom Shutter Controls — di atas navbar sistem HP (bukan navbar app).
           Positioned(

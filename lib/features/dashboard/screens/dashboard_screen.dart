@@ -12,6 +12,7 @@ import '../../../shared/widgets/neo_paw_logo.dart';
 import '../../../shared/widgets/neo_pie_chart.dart';
 import '../../../shared/widgets/neo_line_chart.dart';
 import '../../../shared/widgets/neo_shimmer_skeleton.dart';
+import '../../../core/services/gemini_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   final List<SplitBill> splits;
@@ -38,11 +39,23 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _aiLoading = false;
+  BusinessInsights? _aiInsights;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _analyzeWithAi(List<SplitBill> splits) async {
+    setState(() => _aiLoading = true);
+    final ai = await GeminiService.instance.generateBusinessInsights(splits);
+    if (!mounted) return;
+    setState(() {
+      _aiLoading = false;
+      if (ai != null) _aiInsights = ai;
+    });
   }
 
   List<SplitBill> get _visibleSplits {
@@ -640,6 +653,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               const SizedBox(height: 24),
 
+              // AI Business Insight (Asisten UMKM)
+              if (!widget.isLoading) ...[
+                _buildAiInsightCard(context, widget.splits),
+                const SizedBox(height: 24),
+              ],
+
               // Dynamic Real-Time Section 1: Pie Chart (Kategori Pengeluaran)
               if (widget.isLoading)
                 const NeoShimmerCard(
@@ -772,6 +791,206 @@ class _DashboardScreenState extends State<DashboardScreen> {
             tr('dash_noresult_desc'),
             style: Theme.of(context).textTheme.bodySmall,
             textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiInsightCard(BuildContext context, List<SplitBill> splits) {
+    final c = context.palette;
+    if (splits.isEmpty) {
+      return NeoCard(
+        borderRadius: 24,
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded, color: c.secondary, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                tr('dash_ai_empty'),
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final local = BusinessInsights.local(splits);
+    final insights = _aiInsights ?? local;
+    final topItems = insights.topItems.take(3).toList();
+
+    return NeoCard(
+      borderRadius: 24,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: c.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: c.borderBlack, width: 2),
+                ),
+                child: Icon(Icons.auto_awesome_rounded, color: c.onPrimaryContainer, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr('dash_ai_title'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    Text(
+                      tr('dash_ai_subtitle'),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: insights.fromAI ? c.secondaryContainer : c.surfaceContainer,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: c.borderBlack, width: 1.5),
+                ),
+                child: Text(
+                  insights.fromAI ? tr('dash_ai_gemini_badge') : tr('dash_ai_local_badge'),
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: c.onSurface),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildInsightStat(
+                context,
+                label: tr('dash_ai_revenue'),
+                value: formatCompactCurrency(insights.totalRevenue),
+              ),
+              Container(width: 2, height: 40, color: c.borderBlack),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(tr('dash_ai_top_category'),
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 2),
+                      Text(
+                        insights.topCategory.isEmpty ? '-' : insights.topCategory,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (topItems.isNotEmpty) ...[
+            Text(tr('dash_ai_top_items'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            for (final item in topItems)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.restaurant_rounded, size: 14, color: c.onSurfaceVariant),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        item.name,
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      '${item.qty}x • ${formatCompactCurrency(item.revenue)}',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 8),
+          ],
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: c.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: c.outlineVariant, width: 1.5),
+            ),
+            child: Text(
+              insights.narrative,
+              style: TextStyle(fontSize: 12, height: 1.5, color: c.onSurface),
+            ),
+          ),
+          const SizedBox(height: 14),
+          NeoButton(
+            onTap: () {
+              if (!_aiLoading) _analyzeWithAi(splits);
+            },
+            width: double.infinity,
+            backgroundColor: c.primaryContainer,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_aiLoading)
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: c.onPrimaryContainer),
+                  )
+                else
+                  Icon(Icons.auto_awesome_rounded, size: 16, color: c.onPrimaryContainer),
+                const SizedBox(width: 6),
+                Text(
+                  _aiLoading ? tr('dash_ai_analyzing') : tr('dash_ai_analyze'),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: c.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightStat(BuildContext context,
+      {required String label, required String value}) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+            ),
           ),
         ],
       ),

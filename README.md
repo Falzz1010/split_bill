@@ -13,6 +13,7 @@
   <img src="https://img.shields.io/badge/Dart-3.12-0175C2?logo=dart&logoColor=white" alt="Dart"/>
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-green" alt="Platform"/>
   <img src="https://img.shields.io/badge/OCR-Google%20ML%20Kit-4285F4?logo=google&logoColor=white" alt="ML Kit"/>
+  <img src="https://img.shields.io/badge/AI-Google%20Gemini-8E75B2?logo=google&logoColor=white" alt="Gemini"/>
   <img src="https://img.shields.io/badge/License-Private-red" alt="License"/>
   <img src="https://img.shields.io/badge/Version-1.0.0-yellow" alt="Version"/>
 </p>
@@ -44,6 +45,8 @@
 
 Aplikasi ini dirancang khusus untuk kebutuhan sehari-hari pengguna Indonesia yang sering makan bersama teman, keluarga, atau rekan kerja dan perlu membagi tagihan secara akurat.
 
+> **Neobill juga diarahkan sebagai "AI Smart Bill & Business Assistant untuk UMKM F&B"** (Final Project TRACK AI — Topik 1: AI untuk UMKM). Dengan memadukan **Google ML Kit OCR (offline)** dan **Google Gemini API (AI cloud)**, aplikasi tidak hanya membagi tagihan — tetapi juga membantu kasir warung/kedai kecil membaca struk lebih cepat, dan pemilik usaha mendapatkan **insight bisnis otomatis** (menu terlaris, pola kategori, rekomendasi promo) tanpa harus menganalisis data manual.
+
 ---
 
 ## 🔥 Masalah yang Diselesaikan
@@ -56,6 +59,43 @@ Aplikasi ini dirancang khusus untuk kebutuhan sehari-hari pengguna Indonesia yan
 | Sulit melacak siapa yang sudah bayar dan siapa yang belum | **Status pelunasan** per anggota (Lunas / Belum Bayar) |
 | Tidak ada bukti tagihan yang bisa dikirim ke teman | **Share ke WhatsApp** & **Export PDF** rincian tagihan per orang |
 | Struk asing (USD/SGD/JPY/EUR) susah dikonversi | **Auto-detect mata uang** dari struk + konversi kurs real-time |
+
+---
+
+## 🧠 Arsitektur AI Hibrida & Alignment TRACK AI
+
+Neobill menggabungkan **AI on-device** dan **AI cloud** (hybrid):
+
+```
+Struk (foto)
+   │
+   ├─ 1) Google ML Kit OCR (on-device, offline) ──► teks mentah
+   │
+   ├─ 2) Regex Parser ──► ParsedReceiptResult (item, harga, pajak)
+   │
+   ├─ 3) Gemini API (opsional, jika API key ada)
+   │      ├─ AI Smart Refine  : koreksi salah baca OCR → JSON item presisi
+   │      └─ Business Insights: narasi analisis UMKM dari agregasi transaksi
+   │
+   └─ Tanpa key / offline  ──► analisis lokal (top menu, kategori, total)
+```
+
+### Alignment dengan Rubrik TRACK AI (Topik 1 — AI untuk UMKM)
+
+| Kriteria | Implementasi Neobill |
+|---|---|
+| **AI mengatasi masalah nyata UMKM** | Kasir lambat & rawan salah saat split bill rombongan + PPN 11% / service 10% dihitung manual (dipecahkan oleh Fair Split Engine `computeTaxAndService` + AI OCR Refine) |
+| **Pemanfaatan GenAI** | Google Gemini Flash API (3.6 / 3.5-lite): koreksi OCR struk & narasi insight bisnis |
+| **Data lokal/UMKM diberdayakan** | Seluruh transaksi tercatat lokal (SharedPreferences) → agregasi → insight dashboard |
+| **Solusi terjangkau** | Gemini free tier (AI Studio), ML Kit gratis on-device, tanpa server sendiri |
+| **Offline-first** | Tanpa API key aplikasi tetap berfungsi penuh (OCR ML Kit + analisis lokal) |
+
+### Setup API Key Gemini (Google AI Studio — free)
+
+1. Buka <https://aistudio.google.com/apikey> → **Create API key**.
+2. Di aplikasi: **Pengaturan → Konfigurasi Google Gemini AI** → tempel key.
+3. Tekan **Tes Koneksi AI** untuk verifikasi.
+4. Kosongkan key untuk memakai mode offline/demo (insight dashboard tetap tampil via analisis lokal).
 
 ---
 
@@ -73,6 +113,7 @@ Aplikasi ini dirancang khusus untuk kebutuhan sehari-hari pengguna Indonesia yan
   - Format dua kolom (Pawoon POS, dll.)
 - **Preview & koreksi** hasil OCR sebelum disimpan
 - **Edit teks mentah** OCR dan parse ulang bila ada salah baca
+- **✨ AI Smart Refine (Gemini)**: satu ketukan untuk memperbaiki salah baca OCR secara otomatis — koreksi nama menu khas Indonesia (mis. "Nasi G0reng" → "Nasi Goreng") & harga — lalu parse ulang item
 - **Auto-detect mata uang asing** (USD, SGD, JPY, EUR) dari teks struk
 
 ### ✏️ 2. Bill Editor (Edit Struk & Pesanan)
@@ -117,6 +158,11 @@ Aplikasi ini dirancang khusus untuk kebutuhan sehari-hari pengguna Indonesia yan
 - **Featured Split Card**: kartu utama dengan badge status, statistik ringkas (Total, Items, Status)
 - **Grafik pengeluaran**: chart tren 6 bulan terakhir & pie chart kategori pengeluaran (real-time)
 
+### 💡 7b. AI Business Insight (Asisten Cerdas UMKM)
+- **Analisis otomatis seluruh transaksi** — kartu insight di Dashboard yang selalu tersedia (mode offline / tanpa API key memakai analisis lokal)
+- **Mode AI Enhanced (Gemini)**: tombol "Analisis Transaksi dengan AI" menghasilkan narasi insight bahasa natural — menu terlaris, pola kategori, saran aksi & ide promo untuk warung/kafe
+- **Agregasi cerdas**: top menu, kategori terbesar, total & rata-rata tagihan dihitung lokal, lalu disusun narasinya oleh Gemini (hemat token & cepat)
+
 ### 📜 8. Riwayat Transaksi
 - **Tab filter**: Semua / Lunas / Pending
 - **Search riwayat**: pencarian cepat transaksi lama
@@ -127,6 +173,7 @@ Aplikasi ini dirancang khusus untuk kebutuhan sehari-hari pengguna Indonesia yan
 - **Multi-bahasa**: Bahasa Indonesia & English
 - **Dark Mode**: tema gelap penuh dengan palet warna yang disesuaikan
 - **Kurs mata uang real-time**: update otomatis dari API (open.er-api.com)
+- **Konfigurasi Google Gemini AI**: input API key (Google AI Studio free tier), **Tes Koneksi AI**, toggle AI Auto-Refine OCR
 - **Manajemen database**: bersihkan data / muat data demo
 - **Tutorial in-app**: panduan interaktif untuk pengguna baru
 
@@ -241,7 +288,9 @@ lib/
 │   ├── models/
 │   │   └── split_model.dart           # Model data: SplitBill, Member, ReceiptItem
 │   ├── settings/
-│   │   └── settings_service.dart      # Singleton preferensi (currency, dark mode, language)
+│   │   └── settings_service.dart      # Singleton preferensi (currency, dark mode, language, AI key)
+│   ├── services/
+│   │   └── gemini_service.dart        # ⭐ Client Google Gemini: AI refine OCR + Business Insights
 │   ├── state/
 │   │   └── split_store.dart           # State management (ChangeNotifier)
 │   ├── theme/
@@ -325,6 +374,7 @@ lib/
 | **Navigation** | `IndexedStack` + custom state | Bottom navigation dengan floating center button |
 | **Local Storage** | `SharedPreferences` + JSON | Penyimpanan data offline ringan |
 | **OCR Engine** | Google ML Kit Text Recognition | On-device, tanpa internet untuk proses scan |
+| **AI Engine** | Google Gemini Flash API (3.6 / 3.5-lite) | Koreksi OCR cerdas & insight bisnis (AI Studio free tier) |
 | **Camera** | `camera` package | Live preview kamera |
 | **Image Picker** | `image_picker` package | Pilih gambar dari galeri |
 | **PDF Generator** | `pdf` + `printing` | Generate & print/download PDF |
@@ -355,7 +405,7 @@ dependencies:
   url_launcher: ^6.3.2           # Buka WhatsApp / URL eksternal
   pdf: ^3.13.0                   # Generate dokumen PDF
   printing: ^5.15.0              # Preview & print/save PDF
-  http: ^1.5.0                   # HTTP client (fetch kurs)
+  http: ^1.5.0                   # HTTP client (fetch kurs + Gemini API)
   shimmer: ^3.0.0                # Shimmer skeleton loading
 ```
 

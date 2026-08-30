@@ -3,7 +3,9 @@ import 'core/settings/settings_service.dart';
 import 'core/utils/app_l10n.dart';
 import 'core/theme/app_colors.dart';
 import 'core/models/split_model.dart';
+import 'core/models/transaksi_umkm.dart';
 import 'core/state/split_store.dart';
+import 'core/state/transaksi_umkm_store.dart';
 import 'features/dashboard/screens/dashboard_screen.dart';
 import 'features/ocr_scanner/screens/scanner_screen.dart';
 import 'features/bill_editor/screens/bill_editor_screen.dart';
@@ -12,6 +14,11 @@ import 'features/ringkasan/screens/ringkasan_screen.dart';
 import 'features/riwayat/screens/riwayat_screen.dart';
 import 'features/pengaturan/screens/pengaturan_screen.dart';
 import 'features/onboarding/widgets/feature_tutorial_overlay.dart';
+import 'features/umkm/screens/umkm_dashboard_screen.dart';
+import 'features/umkm/screens/umkm_transaksi_list_screen.dart';
+import 'features/umkm/screens/umkm_insight_screen.dart';
+import 'features/umkm/screens/umkm_inventory_screen.dart';
+import 'features/umkm/widgets/kasir_dialog.dart';
 
 import 'core/utils/receipt_parser.dart';
 
@@ -72,14 +79,13 @@ class _MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
     SplitStore.instance.load();
+    TransaksiUmkmStore.instance.load();
   }
 
   void _openCreateSplitBottomSheet({ParsedReceiptResult? prefill}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      // Amankan area atas (status bar) agar header dialog + tombol X selalu
-      // terlihat; keyboard & navbar sistem ditangani di dalam CreateSplitDialog.
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
@@ -94,11 +100,63 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
+  void _openKasirDialog({
+    required String merchantName,
+    required List<TransaksiItem> items,
+    required double subtotal,
+    required double ppn,
+    required double serviceCharge,
+    required double totalAmount,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return KasirDialog(
+          merchantName: merchantName,
+          items: items,
+          subtotal: subtotal,
+          ppn: ppn,
+          serviceCharge: serviceCharge,
+          totalAmount: totalAmount,
+          onConfirm: (transaksi) async {
+            await TransaksiUmkmStore.instance.add(transaksi);
+          },
+        );
+      },
+    );
+  }
+
   // Tab yang sedang menampilkan skeleton & yang sudah pernah menampilkannya.
   // ponytail: skeleton durasi tampilan (1,2s) saat tab pertama kali dibuka —
   // hapus bila data menjadi benar-benar lambat dimuat.
   final Set<int> _skeletonTabs = {};
   final Set<int> _visitedTabs = {};
+
+  /// Simulasi scan UMKM untuk testing tanpa kamera.
+  void _testScanUmkm() {
+    final items = [
+      TransaksiItem(id: '1', name: 'Nasi Goreng Spesial', price: 25000, quantity: 1),
+      TransaksiItem(id: '2', name: 'Ayam Bakar Madu', price: 28000, quantity: 2),
+      TransaksiItem(id: '3', name: 'Es Teh Manis', price: 8000, quantity: 1),
+      TransaksiItem(id: '4', name: 'Kerupuk', price: 5000, quantity: 1),
+    ];
+    final subtotal = items.fold(0.0, (sum, i) => sum + i.lineTotal);
+    final ppn = subtotal * 0.1;
+    final service = 5000.0;
+    final total = subtotal + ppn + service;
+
+    _openKasirDialog(
+      merchantName: 'Warung Nusantara',
+      items: items,
+      subtotal: subtotal,
+      ppn: ppn,
+      serviceCharge: service,
+      totalAmount: total,
+    );
+  }
 
   void _selectTab(int index) {
     setState(() {
@@ -125,16 +183,36 @@ class _MainNavigationState extends State<MainNavigation> {
       return ScannerScreen(
         onClose: () => setState(() => _isScannerOpen = false),
         onScanWithResult: (parsed) {
-          setState(() {
-            _isScannerOpen = false;
-          });
-          _openCreateSplitBottomSheet(prefill: parsed);
+          setState(() { _isScannerOpen = false; });
+          final mode = SettingsService.instance.appMode;
+          if (mode == AppMode.umkm) {
+            // UMKM: convert ReceiptItem → TransaksiItem, open KasirDialog.
+            final items = parsed.items.map((i) => TransaksiItem(
+              id: i.id, name: i.name, price: i.price, quantity: i.quantity,
+            )).toList();
+            final subtotal = items.fold(0.0, (s, i) => s + i.lineTotal);
+            final ppn = subtotal * 0.11;
+            final service = 5000.0;
+            _openKasirDialog(
+              merchantName: parsed.merchantName,
+              items: items,
+              subtotal: subtotal,
+              ppn: ppn,
+              serviceCharge: service,
+              totalAmount: subtotal + ppn + service,
+            );
+          } else {
+            _openCreateSplitBottomSheet(prefill: parsed);
+          }
         },
         onScanComplete: () {
-          setState(() {
-            _isScannerOpen = false;
-          });
-          _openCreateSplitBottomSheet();
+          setState(() { _isScannerOpen = false; });
+          final mode = SettingsService.instance.appMode;
+          if (mode == AppMode.umkm) {
+            _testScanUmkm();
+          } else {
+            _openCreateSplitBottomSheet();
+          }
         },
       );
     }
@@ -160,12 +238,16 @@ class _MainNavigationState extends State<MainNavigation> {
       );
     }
 
-    return ListenableBuilder(
-      listenable: SplitStore.instance,
+return ListenableBuilder(
+      listenable: Listenable.merge([SplitStore.instance, SettingsService.instance]),
       builder: (context, _) {
         final c = context.palette;
         final store = SplitStore.instance;
-        final screens = [
+        final mode = SettingsService.instance.appMode;
+
+        // Personal mode screens: [Dashboard, Riwayat, Ringkasan, Pengaturan]
+        // UMKM mode screens: [Kasir (Scanner), Dashboard Omzet, Laporan Shift, Pengaturan]
+        final personalScreens = [
           DashboardScreen(
             splits: store.splits,
             activeFeaturedSplit: currentSelectedSplit,
@@ -182,7 +264,7 @@ class _MainNavigationState extends State<MainNavigation> {
             isLoading: store.isLoading || _skeletonTabs.contains(1),
             onSelectSplit: (split) {
               SplitStore.instance.select(split);
-              setState(() => _currentIndex = 2); // Switch to Ringkasan
+              setState(() => _currentIndex = 2);
             },
             onDeleteSplit: (id) async {
               await SplitStore.instance.delete(id);
@@ -198,8 +280,6 @@ class _MainNavigationState extends State<MainNavigation> {
             onAllPaid: () => setState(() => _currentIndex = 0),
             onUpdateSplit: (updated) async {
               await SplitStore.instance.update(updated);
-              // Sudah lunas: Summary tidak lagi menampilkan split ini
-              // (otomatis beralih ke split aktif lain / keadaan kosong).
               if (updated.isCompleted) {
                 SplitStore.instance.select(null);
               }
@@ -211,10 +291,36 @@ class _MainNavigationState extends State<MainNavigation> {
             },
           ),
         ];
+
+        final umkmScreens = [
+          // Riwayat Transaksi
+          const UmkmTransaksiListScreen(),
+          // Dashboard Omzet (UMKM version)
+          UmkmDashboardScreen(
+            onOpenScanner: () => setState(() => _isScannerOpen = true),
+            onTestScan: () => _testScanUmkm(),
+          ),
+          // Scanner (via floating button)
+          const SizedBox.shrink(),
+          // Inventory
+          const UmkmInventoryScreen(),
+          // Insight Bisnis (AI)
+          const UmkmInsightScreen(),
+          PengaturanScreen(
+            onShowTutorial: () {
+              if (mounted) setState(() => _tutorialVisible = true);
+            },
+          ),
+        ];
+
+        final screens = mode == AppMode.personal ? personalScreens : umkmScreens;
+        final navItems = mode == AppMode.personal
+            ? _buildPersonalNavItems()
+            : _buildUmkmNavItems();
         return Stack(
           children: [
             Scaffold(
-              body: IndexedStack(index: _currentIndex, children: screens),
+              body: IndexedStack(index: _currentIndex.clamp(0, screens.length - 1), children: screens),
               bottomNavigationBar: SafeArea(
                 child: Container(
                   height: 72,
@@ -233,33 +339,7 @@ class _MainNavigationState extends State<MainNavigation> {
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildNavItem(
-                            0,
-                            icon: Icons.home_rounded,
-                            label: tr('nav_home'),
-                            key: _homeTabKey,
-                          ),
-                          _buildNavItem(
-                            1,
-                            icon: Icons.history_rounded,
-                            label: tr('nav_history'),
-                            key: _historyTabKey,
-                          ),
-                          const SizedBox(width: 52), // Safe center gap
-                          _buildNavItem(
-                            2,
-                            icon: Icons.bar_chart_rounded,
-                            label: tr('nav_summary'),
-                            key: _summaryTabKey,
-                          ),
-                          _buildNavItem(
-                            3,
-                            icon: Icons.settings_rounded,
-                            label: tr('nav_settings'),
-                            key: _settingsTabKey,
-                          ),
-                        ],
+                        children: navItems,
                       ),
 
                       // Central Floating Camera Button
@@ -337,6 +417,70 @@ class _MainNavigationState extends State<MainNavigation> {
         );
       },
     );
+  }
+
+  List<Widget> _buildPersonalNavItems() {
+    return [
+      _buildNavItem(
+        0,
+        icon: Icons.home_rounded,
+        label: tr('nav_home'),
+        key: _homeTabKey,
+      ),
+      _buildNavItem(
+        1,
+        icon: Icons.history_rounded,
+        label: tr('nav_history'),
+        key: _historyTabKey,
+      ),
+      const SizedBox(width: 52), // Safe center gap
+      _buildNavItem(
+        2,
+        icon: Icons.bar_chart_rounded,
+        label: tr('nav_summary'),
+        key: _summaryTabKey,
+      ),
+      _buildNavItem(
+        3,
+        icon: Icons.settings_rounded,
+        label: tr('nav_settings'),
+        key: _settingsTabKey,
+      ),
+    ];
+  }
+
+  List<Widget> _buildUmkmNavItems() {
+    return [
+      _buildNavItem(
+        0,
+        icon: Icons.receipt_long_rounded,
+        label: tr('nav_riwayat'),
+        key: _summaryTabKey,
+      ),
+      _buildNavItem(
+        1,
+        icon: Icons.dashboard_rounded,
+        label: tr('nav_omzet'),
+        key: _historyTabKey,
+      ),
+      const SizedBox(width: 52),
+      _buildNavItem(
+        3,
+        icon: Icons.inventory_2_rounded,
+        label: 'Stok',
+      ),
+      _buildNavItem(
+        4,
+        icon: Icons.insights_rounded,
+        label: 'Insight',
+        key: _settingsTabKey,
+      ),
+      _buildNavItem(
+        5,
+        icon: Icons.settings_rounded,
+        label: tr('nav_settings'),
+      ),
+    ];
   }
 
   Widget _buildNavItem(

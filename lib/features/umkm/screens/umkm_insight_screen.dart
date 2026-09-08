@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/app_l10n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/state/transaksi_umkm_store.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -32,30 +33,72 @@ class _UmkmInsightScreenState extends State<UmkmInsightScreen> {
     final store = TransaksiUmkmStore.instance;
     if (store.transaksi.isEmpty) return;
 
-    // Load all in parallel
-    final results = await Future.wait([
-      GeminiService.instance.analyzeMenuProfitability(store.transaksi),
-      GeminiService.instance.forecastSales(store.transaksi),
-      GeminiService.instance.calculateHealthScore(store.transaksi),
-    ]);
+    try {
+      // Load all in parallel
+      final results = await Future.wait([
+        GeminiService.instance.analyzeMenuProfitability(store.transaksi),
+        GeminiService.instance.forecastSales(store.transaksi),
+        GeminiService.instance.calculateHealthScore(store.transaksi),
+      ]);
 
-    if (!mounted) return;
-    setState(() {
-      _profitText = results[0] as String?;
-      _forecastText = results[1] as String?;
-      final health = results[2] as ({int score, String analysis})?;
-      if (health != null) _healthResult = health;
-    });
+      if (!mounted) return;
+      setState(() {
+        _profitText = results[0] as String?;
+        _forecastText = results[1] as String?;
+        final health = results[2] as ({int score, String analysis})?;
+        if (health != null) _healthResult = health;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Insight load error: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.palette;
+    final store = TransaksiUmkmStore.instance;
 
     return Scaffold(
       backgroundColor: c.background,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: store.transaksi.isEmpty
+            ? Center(
+                child: NeoCard(
+                  borderRadius: 28,
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: c.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: c.borderBlack, width: 2),
+                        ),
+                        child: Center(
+                          child: Icon(Icons.insights_rounded, size: 36, color: c.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        tr('ai_belum_data'),
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        tr('ai_belum_data_desc'),
+                        style: Theme.of(context).textTheme.bodySmall,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,7 +109,7 @@ class _UmkmInsightScreenState extends State<UmkmInsightScreen> {
                   Icon(Icons.insights_rounded, size: 28, color: c.primary),
                   const SizedBox(width: 10),
                   Text(
-                    'Insight Bisnis',
+                    tr('insight_title'),
                     style: Theme.of(context)
                         .textTheme
                         .headlineSmall
@@ -76,7 +119,7 @@ class _UmkmInsightScreenState extends State<UmkmInsightScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Analisis mendalam dari AI Gemini',
+                tr('insight_subtitle'),
                 style: TextStyle(fontSize: 13, color: c.onSurfaceVariant),
               ),
               const SizedBox(height: 20),
@@ -87,7 +130,7 @@ class _UmkmInsightScreenState extends State<UmkmInsightScreen> {
 
               // 2. Menu Profitability
               _buildInsightCard(
-                title: 'Profitabilitas Menu',
+                title: tr('insight_profit_menu'),
                 icon: Icons.account_balance_wallet_rounded,
                 isLoading: _profitLoading,
                 text: _profitText,
@@ -107,7 +150,7 @@ class _UmkmInsightScreenState extends State<UmkmInsightScreen> {
 
               // 3. Sales Forecast
               _buildInsightCard(
-                title: 'Prediksi Penjualan',
+                title: tr('insight_forecast'),
                 icon: Icons.trending_up_rounded,
                 isLoading: _forecastLoading,
                 text: _forecastText,
@@ -155,7 +198,7 @@ class _UmkmInsightScreenState extends State<UmkmInsightScreen> {
             children: [
               Icon(Icons.account_balance_wallet_rounded, color: c.primary, size: 20),
               const SizedBox(width: 8),
-              const Text('Prediksi Kas 7 Hari', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+              Text(tr('insight_cashflow'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
             ],
           ),
           const SizedBox(height: 12),
@@ -217,13 +260,13 @@ class _UmkmInsightScreenState extends State<UmkmInsightScreen> {
       label = '-';
     } else if (score >= 80) {
       scoreColor = Colors.green;
-      label = 'Sehat';
+      label = tr('insight_health_sehat');
     } else if (score >= 60) {
       scoreColor = Colors.orange;
-      label = 'Cukup';
+      label = tr('insight_health_cukup');
     } else {
       scoreColor = Colors.red;
-      label = 'Perlu Perhatian';
+      label = tr('insight_health_perlu');
     }
 
     return NeoCard(
@@ -235,8 +278,8 @@ class _UmkmInsightScreenState extends State<UmkmInsightScreen> {
             children: [
               Icon(Icons.favorite_rounded, color: scoreColor, size: 22),
               const SizedBox(width: 8),
-              const Text(
-                'Health Score',
+              Text(
+                tr('insight_health'),
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
               ),
               const Spacer(),
@@ -307,7 +350,7 @@ class _UmkmInsightScreenState extends State<UmkmInsightScreen> {
                   Icon(Icons.favorite_rounded, size: 16, color: c.onPrimaryContainer),
                   const SizedBox(width: 6),
                   Text(
-                    'Hitung Skor',
+                    tr('insight_hitung_skor'),
                     style: TextStyle(fontWeight: FontWeight.w800, color: c.onPrimaryContainer),
                   ),
                 ],
@@ -373,7 +416,7 @@ class _UmkmInsightScreenState extends State<UmkmInsightScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  'Belum ada data',
+                  tr('insight_belum_data'),
                   style: TextStyle(color: c.outline),
                 ),
               ),
@@ -398,8 +441,8 @@ class _UmkmInsightScreenState extends State<UmkmInsightScreen> {
             children: [
               Icon(Icons.leaderboard_rounded, size: 18, color: c.primary),
               const SizedBox(width: 6),
-              const Text(
-                'Top Menu by Profit',
+              Text(
+                tr('insight_top_profit'),
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
               ),
             ],

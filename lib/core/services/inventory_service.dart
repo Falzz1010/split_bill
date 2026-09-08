@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/transaksi_umkm.dart';
 
@@ -234,7 +235,8 @@ class InventoryService {
     try {
       final list = jsonDecode(raw) as List<dynamic>;
       _items = list.map((e) => InventoryItem.fromJson(e as Map<String, dynamic>)).toList();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('InventoryService.load: $e');
       _items = [];
     }
   }

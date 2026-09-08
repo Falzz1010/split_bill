@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import '../../../core/services/pdf_export_service.dart';
 import '../../../core/utils/app_l10n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/split_model.dart';
@@ -167,33 +165,7 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
   }
 
   Future<void> _exportPdf() async {
-    final doc = pw.Document();
-    doc.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        build: (context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: _summaryLines()
-              .map(
-                (line) => pw.Padding(
-                  padding: const pw.EdgeInsets.only(bottom: 3),
-                  child: pw.Text(
-                    line,
-                    style: line.startsWith('  ')
-                        ? pw.TextStyle(fontSize: 10)
-                        : pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                  ),
-                ),
-              )
-              .toList(),
-        ),
-      ),
-    );
-    final bytes = await doc.save();
-    await Printing.sharePdf(bytes: bytes, filename: 'fair_split_struk.pdf');
+    await PdfExportService.exportSplitBill(widget.splitBill);
   }
 
   @override

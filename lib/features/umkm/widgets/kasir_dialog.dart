@@ -172,6 +172,11 @@ class _KasirDialogState extends State<KasirDialog> {
               },
               onSelected: (value) => _categoryController.text = value,
               fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                focusNode.addListener(() {
+                  if (!focusNode.hasFocus) {
+                    _categoryController.text = controller.text;
+                  }
+                });
                 return TextField(
                   controller: controller,
                   focusNode: focusNode,
@@ -179,6 +184,7 @@ class _KasirDialogState extends State<KasirDialog> {
                     _categoryController.text = controller.text;
                     focusNode.unfocus();
                   },
+                  onChanged: (_) => _categoryController.text = controller.text,
                   decoration: InputDecoration(
                     hintText: 'F&B, Minuman, dll.',
                     hintStyle: TextStyle(color: c.outline),

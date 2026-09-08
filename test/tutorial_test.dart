@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fairsplit/core/settings/settings_service.dart';
-import 'package:fairsplit/core/theme/app_colors.dart';
 import 'package:fairsplit/features/splash/screens/splash_screen.dart';
 import 'package:fairsplit/features/onboarding/widgets/feature_tutorial_overlay.dart';
 

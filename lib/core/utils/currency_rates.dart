@@ -73,7 +73,9 @@ class CurrencyRatesService extends ChangeNotifier {
       }
       final updated = prefs.getString(_kUpdated);
       if (updated != null) _lastUpdated = DateTime.tryParse(updated);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('CurrencyRatesService.load: $e');
+    }
   }
 
   /// Ambil kurs terbaru dari open.er-api.com (gratis, tanpa key).
@@ -100,9 +102,12 @@ class CurrencyRatesService extends ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_kRates, jsonEncode(_rates));
         await prefs.setString(_kUpdated, _lastUpdated!.toIso8601String());
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('CurrencyRatesService.refreshRates persist: $e');
+      }
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('CurrencyRatesService.refreshRates: $e');
       return false;
     }
   }

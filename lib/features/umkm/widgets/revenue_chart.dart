@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../../core/utils/app_l10n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/transaksi_umkm.dart';
 
@@ -23,7 +24,7 @@ class RevenueChart extends StatelessWidget {
         height: 160,
         child: Center(
           child: Text(
-            'Belum ada data',
+            tr('inv_belum_data'),
             style: TextStyle(color: c.outline, fontSize: 12),
           ),
         ),

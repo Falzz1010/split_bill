@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fairsplit/core/models/split_model.dart';
-import 'package:fairsplit/core/theme/app_colors.dart';
 import 'package:fairsplit/features/bill_editor/screens/create_split_dialog.dart';
 
 import 'helpers/palette_test_wrapper.dart';

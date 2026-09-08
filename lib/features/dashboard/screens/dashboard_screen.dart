@@ -50,12 +50,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _analyzeWithAi(List<SplitBill> splits) async {
     setState(() => _aiLoading = true);
-    final ai = await GeminiService.instance.generateBusinessInsights(splits);
-    if (!mounted) return;
-    setState(() {
-      _aiLoading = false;
-      if (ai != null) _aiInsights = ai;
-    });
+    try {
+      final ai = await GeminiService.instance.generateBusinessInsights(splits);
+      if (!mounted) return;
+      setState(() {
+        _aiLoading = false;
+        if (ai != null) _aiInsights = ai;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Dashboard AI error: $e');
+      setState(() => _aiLoading = false);
+    }
   }
 
   List<SplitBill> get _visibleSplits {
@@ -119,18 +125,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<LinePoint> _calculateLineData(List<SplitBill> splits) {
     final now = DateTime.now();
     final monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
+      tr('month_jan'),
+      tr('month_feb'),
+      tr('month_mar'),
+      tr('month_apr'),
+      tr('month_mei'),
+      tr('month_jun'),
+      tr('month_jul'),
+      tr('month_agu'),
+      tr('month_sep'),
+      tr('month_okt'),
+      tr('month_nov'),
+      tr('month_des'),
     ];
 
     final List<LinePoint> linePoints = [];
@@ -207,25 +213,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  NeoButton(
-                    onTap: widget.onCreateNewSplit,
-                    backgroundColor: c.surfaceContainerLowest,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.add, size: 16, color: c.onSurface),
-                        const SizedBox(width: 4),
-                        Text(
-                          tr('dash_new_receipts'),
-                          style: Theme.of(
-                            context,
-                          ).textTheme.labelMedium?.copyWith(fontSize: 12),
-                        ),
-                      ],
+                  Semantics(
+                    button: true,
+                    label: tr('dash_new_receipts'),
+                    child: NeoButton(
+                      onTap: widget.onCreateNewSplit,
+                      backgroundColor: c.surfaceContainerLowest,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add, size: 16, color: c.onSurface),
+                          const SizedBox(width: 4),
+                          Text(
+                            tr('dash_new_receipts'),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.labelMedium?.copyWith(fontSize: 12),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -633,19 +643,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 16),
 
                       // CTA Button
-                      NeoButton(
-                        onTap: () => widget.onSelectSplit(_featuredSplit),
-                        width: double.infinity,
-                        backgroundColor: c.primaryContainer,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        child: Text(
-                          tr('dash_lihat_edit'),
-                          style: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
-                                color: c.onPrimaryContainer,
-                              ),
+                      Semantics(
+                        button: true,
+                        label: tr('dash_lihat_edit'),
+                        child: NeoButton(
+                          onTap: () => widget.onSelectSplit(_featuredSplit),
+                          width: double.infinity,
+                          backgroundColor: c.primaryContainer,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          child: Text(
+                            tr('dash_lihat_edit'),
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                  color: c.onPrimaryContainer,
+                                ),
+                          ),
                         ),
                       ),
                     ],
@@ -942,34 +956,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          NeoButton(
-            onTap: () {
-              if (!_aiLoading) _analyzeWithAi(splits);
-            },
-            width: double.infinity,
-            backgroundColor: c.primaryContainer,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (_aiLoading)
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: c.onPrimaryContainer),
-                  )
-                else
-                  Icon(Icons.auto_awesome_rounded, size: 16, color: c.onPrimaryContainer),
-                const SizedBox(width: 6),
-                Text(
-                  _aiLoading ? tr('dash_ai_analyzing') : tr('dash_ai_analyze'),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                    color: c.onPrimaryContainer,
+          Semantics(
+            button: true,
+            label: tr('dash_ai_analyze'),
+            child: NeoButton(
+              onTap: () {
+                if (!_aiLoading) _analyzeWithAi(splits);
+              },
+              width: double.infinity,
+              backgroundColor: c.primaryContainer,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_aiLoading)
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: c.onPrimaryContainer),
+                    )
+                  else
+                    Icon(Icons.auto_awesome_rounded, size: 16, color: c.onPrimaryContainer),
+                  const SizedBox(width: 6),
+                  Text(
+                    _aiLoading ? tr('dash_ai_analyzing') : tr('dash_ai_analyze'),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      color: c.onPrimaryContainer,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

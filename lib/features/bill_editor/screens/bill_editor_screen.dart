@@ -7,6 +7,8 @@ import '../../../shared/widgets/neo_bottom_sheet.dart';
 import '../../../shared/widgets/neo_card.dart';
 import '../../../shared/widgets/neo_button.dart';
 import '../../../shared/widgets/neo_chip.dart';
+import '../../../shared/widgets/neo_confirm_dialog.dart';
+import '../../../core/utils/app_snackbar.dart';
 
 class BillEditorScreen extends StatefulWidget {
   final SplitBill splitBill;
@@ -32,11 +34,46 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
   bool _includeTax = true;
   bool _includeService = true;
 
+  late final List<ReceiptItem> _initialItems;
+  late final List<Member> _initialMembers;
+  late final bool _initialIncludeTax;
+  late final bool _initialIncludeService;
+
+  bool get _hasUnsavedChanges =>
+      _items.length != _initialItems.length ||
+      _members.length != _initialMembers.length ||
+      _includeTax != _initialIncludeTax ||
+      _includeService != _initialIncludeService ||
+      !_listEquals(_items, _initialItems) ||
+      !_listEquals(_members, _initialMembers);
+
+  bool _listEquals<T>(List<T> a, List<T> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   @override
   void initState() {
     super.initState();
     _items = List.from(widget.splitBill.items);
     _members = List.from(widget.splitBill.members);
+    _initialItems = List.from(_items);
+    _initialMembers = List.from(_members);
+    _initialIncludeTax = _includeTax;
+    _initialIncludeService = _includeService;
+  }
+
+  Future<bool> _onWillPop() async {
+    if (!_hasUnsavedChanges) return true;
+    return await showConfirmDialog(
+      context,
+      title: tr('edit_discard_title'),
+      message: tr('edit_discard_desc'),
+      confirmLabel: tr('edit_discard'),
+    );
   }
 
   /// Warna aksen anggota via parser aman (hex rusak tidak membuat crash).
@@ -366,7 +403,14 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                   children: [
                     Expanded(
                       child: NeoButton(
-                        onTap: () {
+                        onTap: () async {
+                          final confirmed = await showConfirmDialog(
+                            context,
+                            title: tr('edit_delete_item_confirm'),
+                            message: tr('edit_delete_item_desc').replaceAll('{name}', item.name),
+                            confirmLabel: tr('del_hapus'),
+                          );
+                          if (!confirmed || !context.mounted) return;
                           setState(() {
                             _items.removeWhere((i) => i.id == item.id);
                           });
@@ -435,7 +479,16 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.palette;
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldPop = await _onWillPop();
+        if (shouldPop && context.mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
       backgroundColor: c.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
@@ -446,7 +499,9 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 GestureDetector(
-                  onTap: widget.onBack,
+                  onTap: () async {
+                    if (await _onWillPop()) widget.onBack();
+                  },
                   child: Container(
                     width: 40,
                     height: 40,
@@ -478,19 +533,17 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                 ),
                 if (widget.onDeleteSplit != null)
                   GestureDetector(
-                    onTap: () {
+                    onTap: () async {
+                      final confirmed = await showDeleteConfirmDialog(context, widget.splitBill.title);
+                      if (!confirmed || !context.mounted) return;
+                      final title = widget.splitBill.title;
                       widget.onDeleteSplit!(widget.splitBill.id);
-                      widget.onBack();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            tr(
-                              'ring_deleted',
-                            ).replaceAll('{title}', widget.splitBill.title),
-                          ),
-                          backgroundColor: c.borderBlack,
-                        ),
+                      if (!context.mounted) return;
+                      showNeoSnack(
+                        context,
+                        tr('ring_deleted').replaceAll('{title}', title),
                       );
+                      widget.onBack();
                     },
                     child: Container(
                       width: 40,
@@ -665,7 +718,14 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
                                     ),
                                     const SizedBox(width: 8),
                                     GestureDetector(
-                                      onTap: () {
+                                      onTap: () async {
+                                        final confirmed = await showConfirmDialog(
+                                          context,
+                                          title: tr('edit_delete_item_confirm'),
+                                          message: tr('edit_delete_item_desc').replaceAll('{name}', item.name),
+                                          confirmLabel: tr('del_hapus'),
+                                        );
+                                        if (!confirmed || !context.mounted) return;
                                         setState(() {
                                           _items.removeWhere(
                                             (i) => i.id == item.id,
@@ -990,6 +1050,7 @@ class _BillEditorScreenState extends State<BillEditorScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }

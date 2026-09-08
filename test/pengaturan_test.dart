@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:fairsplit/core/theme/app_colors.dart';
 import 'package:fairsplit/features/pengaturan/screens/pengaturan_screen.dart';
 
 import 'helpers/palette_test_wrapper.dart';

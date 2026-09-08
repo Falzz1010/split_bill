@@ -72,11 +72,27 @@ class _UmkmTransaksiListScreenState extends State<UmkmTransaksiListScreen> {
                     children: [
                       Icon(Icons.receipt_long_rounded, color: c.primary, size: 24),
                       const SizedBox(width: 10),
-                      Text(tr('umkm_transaksi_list'),
-                          style: Theme.of(context).textTheme.headlineLarge),
+                      Flexible(
+                        child: Text(tr('umkm_transaksi_list'),
+                            style: Theme.of(context).textTheme.headlineLarge,
+                            overflow: TextOverflow.ellipsis),
+                      ),
                       const Spacer(),
                       GestureDetector(
-                        onTap: () => PdfExportService.exportAllTransactions(range: _dateRange),
+                        onTap: () async {
+                          try {
+                            await PdfExportService.exportAllTransactions(range: _dateRange);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(tr('umkm_pdf_fail')),
+                                  backgroundColor: c.error,
+                                ),
+                              );
+                            }
+                          }
+                        },
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(

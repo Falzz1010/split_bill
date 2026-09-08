@@ -53,12 +53,12 @@ class _UmkmInventoryScreenState extends State<UmkmInventoryScreen>
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 children: [
-                  _buildMiniStat(c, 'Total Item', '${InventoryService.instance.items.length}', Icons.category_rounded),
+                  _buildMiniStat(c, tr('inv_total_item'), '${InventoryService.instance.items.length}', Icons.category_rounded),
                   const SizedBox(width: 8),
-                  _buildMiniStat(c, 'Stok Rendah', '${InventoryService.instance.lowStockItems.length}', Icons.warning_rounded,
+                  _buildMiniStat(c, tr('umkm_inv_alert'), '${InventoryService.instance.lowStockItems.length}', Icons.warning_rounded,
                       color: InventoryService.instance.lowStockItems.isNotEmpty ? c.error : null),
                   const SizedBox(width: 8),
-                  _buildMiniStat(c, 'Nilai Stok', _formatValue(InventoryService.instance.totalInventoryValue), Icons.attach_money_rounded),
+                  _buildMiniStat(c, tr('inv_nilai_stok'), _formatValue(InventoryService.instance.totalInventoryValue), Icons.attach_money_rounded),
                 ],
               ),
             ),
@@ -125,7 +125,41 @@ class _UmkmInventoryScreenState extends State<UmkmInventoryScreen>
   Widget _buildAllItems(PaletteData c) {
     final items = InventoryService.instance.items;
     if (items.isEmpty) {
-      return Center(child: Text(tr('umkm_inv_empty'), style: TextStyle(color: c.outline)));
+      return Center(
+        child: NeoCard(
+          borderRadius: 28,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: c.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: c.borderBlack, width: 2),
+                ),
+                child: Center(
+                  child: Icon(Icons.inventory_2_rounded, size: 36, color: c.primary),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                tr('umkm_inv_empty'),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                tr('inv_belum_data'),
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -308,7 +342,17 @@ class _UmkmInventoryScreenState extends State<UmkmInventoryScreen>
               const Spacer(),
               // Adjust buttons
               GestureDetector(
-                onTap: () => InventoryService.instance.adjustStock(item.id, -1),
+                onTap: () async {
+                  try {
+                    await InventoryService.instance.adjustStock(item.id, -1);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Gagal update stok'), backgroundColor: c.error),
+                      );
+                    }
+                  }
+                },
                 child: Container(
                   width: 28, height: 28,
                   decoration: BoxDecoration(
@@ -321,7 +365,17 @@ class _UmkmInventoryScreenState extends State<UmkmInventoryScreen>
               ),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: () => InventoryService.instance.adjustStock(item.id, 1),
+                onTap: () async {
+                  try {
+                    await InventoryService.instance.adjustStock(item.id, 1);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Gagal update stok'), backgroundColor: c.error),
+                      );
+                    }
+                  }
+                },
                 child: Container(
                   width: 28, height: 28,
                   decoration: BoxDecoration(

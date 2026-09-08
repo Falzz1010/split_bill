@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/split_model.dart';
@@ -123,6 +123,8 @@ class GeminiService {
 
   static final GeminiService instance = GeminiService._();
 
+  bool demoMode = false;
+
   /// Chain model per use case (free tier AI Studio, model stable terbaru):
   /// refine OCR → Flash-Lite (cepat), insight bisnis → Flash (lebih kompleks).
   static const _refineModels = [
@@ -164,7 +166,8 @@ $rawOcrText''';
     try {
       final text = await _generate(key, prompt, json: true, models: _refineModels);
       return parseRefineJson(text);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.refineReceiptWithAI: $e');
       return null;
     }
   }
@@ -203,7 +206,8 @@ $summary''';
     try {
       final text = await _generate(key, prompt, models: _insightModels);
       return local.withNarrative(text.trim());
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.generateBusinessInsights: $e');
       return null;
     }
   }
@@ -212,6 +216,7 @@ $summary''';
   Future<BusinessInsights?> generateUmkmInsights(
     List<TransaksiUmkm> transaksi,
   ) async {
+    if (demoMode) return _demoBusinessInsights;
     final key = _apiKey;
     if (key == null || transaksi.isEmpty) return null;
 
@@ -281,13 +286,15 @@ $summary''';
     try {
       final text = await _generate(key, prompt, models: _insightModels);
       return local.withNarrative(text.trim());
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.generateUmkmInsights: $e');
       return null;
     }
   }
 
   /// Analisis profitabilitas menu: AI analisis margin, saran harga, item review.
   Future<String?> analyzeMenuProfitability(List<TransaksiUmkm> transaksi) async {
+    if (demoMode) return _demoMenuProfitability;
     final key = _apiKey;
     if (key == null || transaksi.isEmpty) return null;
 
@@ -329,13 +336,15 @@ Data:
 $summary''';
     try {
       return await _generate(key, prompt, models: _insightModels);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.analyzeMenuProfitability: $e');
       return null;
     }
   }
 
   /// Prediksi penjualan: AI forecast omzet & item populer minggu depan.
   Future<String?> forecastSales(List<TransaksiUmkm> transaksi) async {
+    if (demoMode) return _demoForecastSales;
     final key = _apiKey;
     if (key == null || transaksi.isEmpty) return null;
 
@@ -386,13 +395,15 @@ Data:
 $summary''';
     try {
       return await _generate(key, prompt, models: _insightModels);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.forecastSales: $e');
       return null;
     }
   }
 
   /// Briefing pagi: AI ringkas kondisi bisnis + rekomendasi hari ini.
   Future<String?> generateMorningBriefing(List<TransaksiUmkm> transaksi) async {
+    if (demoMode) return _demoMorningBriefing;
     final key = _apiKey;
     if (key == null || transaksi.isEmpty) return null;
 
@@ -461,13 +472,15 @@ Data:
 $summary''';
     try {
       return await _generate(key, prompt, models: _insightModels);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.generateMorningBriefing: $e');
       return null;
     }
   }
 
   /// Health score bisnis: AI hitung skor 1-100 + rekomendasi perbaikan.
   Future<({int score, String analysis})?> calculateHealthScore(List<TransaksiUmkm> transaksi) async {
+    if (demoMode) return (score: 78, analysis: _demoHealthAnalysis);
     final key = _apiKey;
     if (key == null || transaksi.isEmpty) return null;
 
@@ -538,12 +551,14 @@ $summary''';
         score: (data['score'] as num?)?.toInt().clamp(0, 100) ?? 0,
         analysis: data['analysis']?.toString() ?? '',
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.calculateHealthScore: $e');
       return null;
     }
   }
 
   Future<String?> analyzeSmartPricing(List<TransaksiUmkm> transaksi) async {
+    if (demoMode) return _demoSmartPricing;
     final key = _apiKey;
     if (key == null || transaksi.isEmpty) return null;
     final items = <String, ({double cost, double price, int qty})>{};
@@ -577,12 +592,14 @@ $summary''';
     final prompt = 'Kamu adalah konsultan harga UMKM F&B Indonesia. Dari data harga modal vs harga jual berikut:\n1. Saran harga jual baru untuk setiap item (target margin 40-60%).\n2. Item yang sudah margin-nya baik pertahankan.\n3. Item margin rendah: naik harga berapa, atau strategi bundling.\n4. Format per item: nama, harga sekarang, harga saran, alasan.\nBahasa $lang, praktis langsung pakai angka. Jangan sebut "data simulasi".\nData:\n$summary';
     try {
       return await _generate(key, prompt, models: _insightModels);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.analyzeSmartPricing: $e');
       return null;
     }
   }
 
   Future<String?> optimizeCosts(List<TransaksiUmkm> transaksi) async {
+    if (demoMode) return _demoOptimizeCosts;
     final key = _apiKey;
     if (key == null || transaksi.isEmpty) return null;
     final now = DateTime.now();
@@ -618,12 +635,14 @@ $summary''';
     final prompt = 'Kamu adalah konsultan efisiensi bisnis UMKM Indonesia. Dari data berikut:\n1. Analisis rasio biaya vs pendapatan.\n2. 3 tips kurangi waste/bahan mubazir berdasarkan item terlaris.\n3. Optimasi metode bayar (cash vs QRIS vs debit).\n4. 1 ide efisiensi operasional yang bisa langsung dilakukan.\nBahasa $lang, praktis dan spesifik. Jangan sebut "data simulasi".\nData:\n$summary';
     try {
       return await _generate(key, prompt, models: _insightModels);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.optimizeCosts: $e');
       return null;
     }
   }
 
   Future<String?> analyzeCompetitors(List<TransaksiUmkm> transaksi) async {
+    if (demoMode) return _demoCompetitorAnalysis;
     final key = _apiKey;
     if (key == null || transaksi.isEmpty) return null;
     final items = <String, double>{};
@@ -642,12 +661,14 @@ $summary''';
     final prompt = 'Kamu adalah analis pasar UMKM F&B Indonesia. Dari data harga menu berikut:\n1. Estimasi harga pasar umum untuk makanan/minuman serupa di Indonesia.\n2. Item yang harga-nya terlalu rendah dari pasar -> bisa naik harga.\n3. Item yang harga-nya terlalu tinggi -> pertimbangkan diskon atau porsi lebih besar.\n4. Rekomendasi positioning: murah meriah, sedang, atau premium.\nBahasa $lang, berikan angka perbandingan realistis. Jangan sebut "data simulasi".\nData:\n$summary';
     try {
       return await _generate(key, prompt, models: _insightModels);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.analyzeCompetitors: $e');
       return null;
     }
   }
 
   Future<String?> analyzeMarketTrends(List<TransaksiUmkm> transaksi) async {
+    if (demoMode) return _demoMarketTrends;
     final key = _apiKey;
     if (key == null || transaksi.isEmpty) return null;
     final now = DateTime.now();
@@ -680,12 +701,14 @@ $summary''';
     final prompt = 'Kamu adalah analis tren pasar UMKM F&B Indonesia. Dari data penjualan 2 tren minggu terakhir:\n1. Item yang tren-nya naik vs turun.\n2. Jam ramai dan strategi manfaatkan jam sepi.\n3. Tren konsumen lokal: apa yang biasanya dicari di warung/kafe sejenis.\n4. 1 ide promosi yang relevan dengan tren saat ini.\nBahasa $lang, praktis. Jangan sebut "data simulasi".\nData:\n$summary';
     try {
       return await _generate(key, prompt, models: _insightModels);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.analyzeMarketTrends: $e');
       return null;
     }
   }
 
   Future<String?> suggestGrowthTips(List<TransaksiUmkm> transaksi) async {
+    if (demoMode) return _demoGrowthTips;
     final key = _apiKey;
     if (key == null || transaksi.isEmpty) return null;
     final now = DateTime.now();
@@ -717,12 +740,14 @@ $summary''';
     final prompt = 'Kamu adalah konsultan pertumbuhan UMKM F&B Indonesia. Dari data bisnis berikut:\n1. Analisis pertumbuhan: apakah bisnis naik atau turun.\n5. 3 tips berkembang: expand menu, digital marketing, join marketplace.\n6. Strategi media sosial: platform, konten, jadwal posting.\n7. Saran diversifikasi: menu baru, layanan baru, kerjasama.\nBahasa $lang, inspiratif tapi realistis untuk warung/kafe kecil. Jangan sebut "data simulasi".\nData:\n$summary';
     try {
       return await _generate(key, prompt, models: _insightModels);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.suggestGrowthTips: $e');
       return null;
     }
   }
 
   Future<String?> recommendSuppliers(List<TransaksiUmkm> transaksi) async {
+    if (demoMode) return _demoSupplierRecommendations;
     final key = _apiKey;
     if (key == null || transaksi.isEmpty) return null;
     final itemCost = <String, ({double totalCost, int qty})>{};
@@ -749,7 +774,8 @@ $summary''';
     final prompt = 'Kamu adalah procurement specialist UMKM F&B Indonesia. Dari data bahan baku berikut:\n1. Rekomendasi jenis supplier untuk setiap bahan: grosir, agen, langsung dari petani/nelayan.\n2. Tips negosiasi harga dengan supplier.\n3. Strategi beli bahan: borongan vs harian, musiman vs tetap.\n4. Platform online untuk cari supplier murah (Tokopedia, Shopee, B2B).\nBahasa $lang, praktis untuk warung/kafe kecil. Jangan sebut "data simulasi".\nData:\n$summary';
     try {
       return await _generate(key, prompt, models: _insightModels);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.recommendSuppliers: $e');
       return null;
     }
   }
@@ -801,7 +827,8 @@ Jangan tambahkan komentar, jangan ubah format, jangan keluarkan JSON — hanya t
       final text = parts.isEmpty ? null : parts.first['text'] as String?;
       if (text == null || text.trim().isEmpty) return null;
       return text.trim();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.extractTextFromImage: $e');
       return null;
     }
   }
@@ -814,7 +841,8 @@ Jangan tambahkan komentar, jangan ubah format, jangan keluarkan JSON — hanya t
       await _generate(key, 'Balas dengan JSON: {"ok": true}',
           json: true, models: _refineModels);
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.testConnection: $e');
       return false;
     }
   }
@@ -899,7 +927,8 @@ Jangan tambahkan komentar, jangan ubah format, jangan keluarkan JSON — hanya t
         merchantName: data['merchant_name']?.toString().trim() ?? '',
         items: items,
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('GeminiService.parseRefineJson: $e');
       return null;
     }
   }
@@ -912,4 +941,101 @@ Jangan tambahkan komentar, jangan ubah format, jangan keluarkan JSON — hanya t
     }
     return t;
   }
+
+  static const _demoMenuProfitability = '📊 **Analisis Profitabilitas Menu**\n\n'
+      '• Nasi Goreng: Margin 62% (Rp 13.000 profit/pcs) — TOP PROFIT\n'
+      '• Ayam Bakar: Margin 55% (Rp 16.500 profit/pcs) — Best Seller\n'
+      '• Es Teh: Margin 78% (Rp 6.240 profit/pcs) — Volume Tinggi\n'
+      '• Mie Ayam: Margin 48% (Rp 9.600 profit/pcs) — Perlu Optimasi\n\n'
+      '💡 **Rekomendasi:** Fokus promosi Nasi Goreng + Es Teh sebagai bundle. '
+      'Naikkan harga Mie Ayam 10% ( Rp 20.000 → Rp 22.000) karena masih di bawah rata-rata pasar.';
+
+  static const _demoForecastSales = '📈 **Prediksi Penjualan 3 Hari**\n\n'
+      '• Besok (Jumat): Rp 1.450.000 (confidence 85%)\n'
+      '• Lusa (Sabtu): Rp 1.820.000 (confidence 78%) — hari ramai\n'
+      '• Minggu: Rp 1.380.000 (confidence 72%)\n\n'
+      '📊 Pola: Weekend naik 25-30%. Siapkan stok bahan 20% lebih banyak untuk Jumat-Sabtu. '
+      'Jam ramai: 11.30-13.00 dan 18.00-20.00.';
+
+  static const _demoMorningBriefing = '☀️ **Selamat Pagi! Briefing Hari Ini**\n\n'
+      '📌 Kemarin: 8 transaksi, Rp 1.250.000 omzet\n'
+      '📌 Item terlaris: Nasi Goreng (5 porsi)\n'
+      '📌 Stok kritis: Ayam Potong (sisa 2 kg)\n'
+      '📌 Target hari ini: Rp 1.500.000\n'
+      '💡 Tips: Jam 11.30 biasanya mulai ramai, siapkan persiapan sekarang!\n'
+      '🔥 Semangat! Omzet minggu ini sudah 78% dari target.';
+
+  static const _demoHealthAnalysis = '❤️ **Skor Kesehatan Bisnis: 78/100**\n\n'
+      '✅ Kekuatan: Omzet stabil, variasi menu cukup, margin rata-rata sehat (58%)\n'
+      '⚠️ Perhatian: 3 item stok rendah, churn rate pelanggan belum terpantau\n'
+      '📈 Tren: Naik 12% dari bulan lalu\n\n'
+      '💡 **Aksi Cepat:**\n'
+      '1. Restock Ayam Potong hari ini\n'
+      '2. Buat promo bundle Nasi Goreng + Es Teh\n'
+      '3. Catat jam ramai untuk optimasi jam kerja karyawan';
+
+  static const _demoSmartPricing = '💰 **Smart Pricing Analysis**\n\n'
+      '• Nasi Goreng: Rp 25.000 → **Rp 27.000** (+8%, masih di bawah pasar Rp 28.000)\n'
+      '• Ayam Bakar: Rp 35.000 → **Rp 38.000** (+9%, premium positioning)\n'
+      '• Es Teh: Rp 8.000 → **Rp 8.500** (+6%, volume item, kecil tapi signifikan)\n'
+      '• Mie Ayam: Rp 18.000 → **Rp 20.000** (+11%, masih kompetitif)\n\n'
+      '📊 Estimasi dampak: +Rp 180.000/bulan (enaik 12% omzet tanpa menurunkan volume penjualan).';
+
+  static const _demoOptimizeCosts = '✂️ **Optimasi Biaya**\n\n'
+      '• **Waste Reduction:** Estimasi limbah sayur 15%/minggu → kurangi porsi beli, frekuensi lebih sering\n'
+      '• **Payment Method:** 40% cash → push QRIS (hemat waktu kasir, bonus cashback 0.5%)\n'
+      '• **Energy:** Matikan AC di luar jam ramai (11.00-11.30, 14.00-17.00) — hemat Rp 200.000/bulan\n'
+      '• **Ingredient Swap:** Ganti keju import → lokal (hemat 25% tanpa beda rasa signifikan)\n\n'
+      '💰 Total estimasi penghematan: Rp 450.000/bulan (8% dari total biaya).';
+
+  static const _demoCompetitorAnalysis = '🏪 **Analisis Kompetitor**\n\n'
+      '• Harga rata-rata pasar Nasi Goreng: Rp 25.000-30.000\n'
+      '• Harga kamu: Rp 25.000 — **kompetitif, bisa naik sedikit**\n'
+      '• Kategori premium (Ayam Bakar): Rp 32.000-40.000\n'
+      '• Harga kamu: Rp 35.000 — **di tengah, aman**\n\n'
+      '💡 **Keunggulan:** Porsi lebih besar 15% dari kompetitor sekitar. '
+      'Ini bisa jadi selling point di media sosial. Benchmark: 3 warung dalam radius 2 km.';
+
+  static const _demoMarketTrends = '📊 **Tren Pasar Minggu Ini**\n\n'
+      '🔥 **Naik:** Es Kopi (+30%), Nasi Goreng Kampung (+15%)\n'
+      '📉 **Turun:** Mie Ayam (-10%), Es Jeruk (-5%)\n'
+      '⏰ **Jam Ramai:** 11.30-13.00 (55% transaksi), 18.00-20.00 (35%)\n'
+      '🎯 **Promo Ide:** "Bundle Makan Siang" Nasi Goreng + Es Teh = Rp 30.000 (hemat Rp 3.000)\n'
+      '📱 **Trending:** Menu "Nasi Goreng Gila" naik 40% di pencarian lokal.';
+
+  static const _demoGrowthTips = '🚀 **Tips Pertumbuhan**\n\n'
+      '1. **Instagram Food Photography** — Post 3x/minggu, hashtag #NasiGorengEnak #Kuliner Lokal\n'
+      '2. **GoFood/GrabFood** — Daftar sekarang, potensi +30% order dari delivery\n'
+      '3. **Loyalty Card** — Beli 10 gratis 1, retensi naik 25%\n'
+      '4. **Packaging Cantik** — Rp 500/pack, estetik untuk foto, worth it untuk repeat order\n'
+      '5. **Jam Operasional** — Buka 1 jam lebih pagi (09.00) tangkap sarapan worker\n\n'
+      '📈 Potensi pertumbuhan: +Rp 2.500.000/bulan dalam 3 bulan.';
+
+  static const _demoSupplierRecommendations = '📦 **Rekomendasi Supplier**\n\n'
+      '• **Beras:** Toko Tani Jaya — Rp 12.000/kg ( Grosir, free ongkir >50kg)\n'
+      '• **Ayam:** Ayam Segar Potong — Rp 32.000/kg (fresh harian, bisa PO)\n'
+      '• **Sayur:** Pasar Pagi — Rp 8.000/bundle (lebih murah 20% dari retail)\n'
+      '• **Bumbu:** Royco/Indofood bulk — hemat 15% per porsi\n\n'
+      '💡 **Tips Negosiasi:** Beli mingguan > bulanan (lebih segar, cash flow lebih ringan). '
+      'Minta harga grosir untuk pembelian >Rp 500.000.';
+
+  static final _demoBusinessInsights = BusinessInsights(
+    topItems: [
+      (name: 'Nasi Goreng', qty: 45, revenue: 1125000),
+      (name: 'Ayam Bakar', qty: 28, revenue: 980000),
+      (name: 'Es Teh', qty: 62, revenue: 496000),
+    ],
+    topCategory: 'Makanan Utama',
+    billCount: 12,
+    totalRevenue: 15600000,
+    avgBill: 1300000,
+    narrative: '📊 **Ringkasan Bisnis Bulan Ini**\n\n'
+        'Omzet bulan ini Rp 15.6 juta dari 12 transaksi. '
+        'Menu terlaris: Nasi Goreng (45 porsi), diikuti Ayam Bakar (28 porsi). '
+        'Kategori Makanan Utama menyumbang 68% total omzet. '
+        'Rata-rata transaksi Rp 1.3 juta. '
+        '💡 **Saran:** Fokus promosi Es Teh (margin 78%) sebagai upsell item. '
+        'Paket hemat "Makan + Minum" bisa naikkan avg bill 15%.',
+    fromAI: false,
+  );
 }

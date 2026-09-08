@@ -64,34 +64,46 @@ class _UmkmDashboardScreenState extends State<UmkmDashboardScreen> {
     if (_briefingLoaded) return;
     final store = TransaksiUmkmStore.instance;
     if (store.transaksi.isEmpty) return;
-    final result = await GeminiService.instance.generateMorningBriefing(store.transaksi);
-    if (!mounted) return;
-    setState(() {
-      _briefingLoaded = true;
-      _morningBriefing = result;
-    });
+    try {
+      final result = await GeminiService.instance.generateMorningBriefing(store.transaksi);
+      if (!mounted) return;
+      setState(() {
+        _briefingLoaded = true;
+        _morningBriefing = result;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Morning briefing error: $e');
+      setState(() => _briefingLoaded = true);
+    }
   }
 
   Future<void> _analyzeWithAi() async {
     setState(() => _aiLoading = true);
-    final store = TransaksiUmkmStore.instance;
-    final ai = await GeminiService.instance.generateUmkmInsights(store.transaksi);
-    if (!mounted) return;
-    if (ai != null) {
-      setState(() {
-        _aiLoading = false;
-        _aiInsights = ai;
-      });
-    } else {
-      // Fallback to local
-      final top = store.topItems(limit: 5);
-      final total = store.monthRevenue;
-      final count = store.todayCount;
-      final narrative = 'Hari ini: $count transaksi, omzet Rp ${total.toStringAsFixed(0)}. Item terlaris: ${top.isNotEmpty ? top.first.name : "-"}.';
-      setState(() {
-        _aiLoading = false;
-        _aiNarrative = narrative;
-      });
+    try {
+      final store = TransaksiUmkmStore.instance;
+      final ai = await GeminiService.instance.generateUmkmInsights(store.transaksi);
+      if (!mounted) return;
+      if (ai != null) {
+        setState(() {
+          _aiLoading = false;
+          _aiInsights = ai;
+        });
+      } else {
+        // Fallback to local
+        final top = store.topItems(limit: 5);
+        final total = store.monthRevenue;
+        final count = store.todayCount;
+        final narrative = 'Hari ini: $count transaksi, omzet Rp ${total.toStringAsFixed(0)}. Item terlaris: ${top.isNotEmpty ? top.first.name : "-"}.';
+        setState(() {
+          _aiLoading = false;
+          _aiNarrative = narrative;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('AI analyze error: $e');
+      setState(() => _aiLoading = false);
     }
   }
 
@@ -99,92 +111,128 @@ class _UmkmDashboardScreenState extends State<UmkmDashboardScreen> {
 
   Future<void> _loadSmartPricing() async {
     setState(() => _smartPricingLoading = true);
-    final store = TransaksiUmkmStore.instance;
-    if (store.transaksi.isEmpty) {
-      setState(() { _smartPricingLoading = false; _smartPricingResult = _emptyDataMsg; });
-      return;
+    try {
+      final store = TransaksiUmkmStore.instance;
+      if (store.transaksi.isEmpty) {
+        setState(() { _smartPricingLoading = false; _smartPricingResult = _emptyDataMsg; });
+        return;
+      }
+      final result = await GeminiService.instance.analyzeSmartPricing(store.transaksi);
+      if (!mounted) return;
+      setState(() {
+        _smartPricingLoading = false;
+        _smartPricingResult = result ?? 'Tidak ada data dengan harga modal. Pastikan item punya harga modal.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Smart pricing error: $e');
+      setState(() { _smartPricingLoading = false; _smartPricingResult = 'Gagal memuat data. Coba lagi nanti.'; });
     }
-    final result = await GeminiService.instance.analyzeSmartPricing(store.transaksi);
-    if (!mounted) return;
-    setState(() {
-      _smartPricingLoading = false;
-      _smartPricingResult = result ?? 'Tidak ada data dengan harga modal. Pastikan item punya harga modal.';
-    });
   }
 
   Future<void> _loadCostOpt() async {
     setState(() => _costOptLoading = true);
-    final store = TransaksiUmkmStore.instance;
-    if (store.transaksi.isEmpty) {
-      setState(() { _costOptLoading = false; _costOptResult = _emptyDataMsg; });
-      return;
+    try {
+      final store = TransaksiUmkmStore.instance;
+      if (store.transaksi.isEmpty) {
+        setState(() { _costOptLoading = false; _costOptResult = _emptyDataMsg; });
+        return;
+      }
+      final result = await GeminiService.instance.optimizeCosts(store.transaksi);
+      if (!mounted) return;
+      setState(() {
+        _costOptLoading = false;
+        _costOptResult = result ?? 'Tidak ada data biaya dari 7 hari terakhir.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Cost opt error: $e');
+      setState(() { _costOptLoading = false; _costOptResult = 'Gagal memuat data. Coba lagi nanti.'; });
     }
-    final result = await GeminiService.instance.optimizeCosts(store.transaksi);
-    if (!mounted) return;
-    setState(() {
-      _costOptLoading = false;
-      _costOptResult = result ?? 'Tidak ada data biaya dari 7 hari terakhir.';
-    });
   }
 
   Future<void> _loadCompetitor() async {
     setState(() => _competitorLoading = true);
-    final store = TransaksiUmkmStore.instance;
-    if (store.transaksi.isEmpty) {
-      setState(() { _competitorLoading = false; _competitorResult = _emptyDataMsg; });
-      return;
+    try {
+      final store = TransaksiUmkmStore.instance;
+      if (store.transaksi.isEmpty) {
+        setState(() { _competitorLoading = false; _competitorResult = _emptyDataMsg; });
+        return;
+      }
+      final result = await GeminiService.instance.analyzeCompetitors(store.transaksi);
+      if (!mounted) return;
+      setState(() {
+        _competitorLoading = false;
+        _competitorResult = result ?? 'Tidak ada data harga menu untuk dianalisis.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Competitor error: $e');
+      setState(() { _competitorLoading = false; _competitorResult = 'Gagal memuat data. Coba lagi nanti.'; });
     }
-    final result = await GeminiService.instance.analyzeCompetitors(store.transaksi);
-    if (!mounted) return;
-    setState(() {
-      _competitorLoading = false;
-      _competitorResult = result ?? 'Tidak ada data harga menu untuk dianalisis.';
-    });
   }
 
   Future<void> _loadMarketTrend() async {
     setState(() => _marketTrendLoading = true);
-    final store = TransaksiUmkmStore.instance;
-    if (store.transaksi.isEmpty) {
-      setState(() { _marketTrendLoading = false; _marketTrendResult = _emptyDataMsg; });
-      return;
+    try {
+      final store = TransaksiUmkmStore.instance;
+      if (store.transaksi.isEmpty) {
+        setState(() { _marketTrendLoading = false; _marketTrendResult = _emptyDataMsg; });
+        return;
+      }
+      final result = await GeminiService.instance.analyzeMarketTrends(store.transaksi);
+      if (!mounted) return;
+      setState(() {
+        _marketTrendLoading = false;
+        _marketTrendResult = result ?? 'Tidak ada data tren dari 14 hari terakhir.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Market trend error: $e');
+      setState(() { _marketTrendLoading = false; _marketTrendResult = 'Gagal memuat data. Coba lagi nanti.'; });
     }
-    final result = await GeminiService.instance.analyzeMarketTrends(store.transaksi);
-    if (!mounted) return;
-    setState(() {
-      _marketTrendLoading = false;
-      _marketTrendResult = result ?? 'Tidak ada data tren dari 14 hari terakhir.';
-    });
   }
 
   Future<void> _loadGrowthTips() async {
     setState(() => _growthTipsLoading = true);
-    final store = TransaksiUmkmStore.instance;
-    if (store.transaksi.isEmpty) {
-      setState(() { _growthTipsLoading = false; _growthTipsResult = _emptyDataMsg; });
-      return;
+    try {
+      final store = TransaksiUmkmStore.instance;
+      if (store.transaksi.isEmpty) {
+        setState(() { _growthTipsLoading = false; _growthTipsResult = _emptyDataMsg; });
+        return;
+      }
+      final result = await GeminiService.instance.suggestGrowthTips(store.transaksi);
+      if (!mounted) return;
+      setState(() {
+        _growthTipsLoading = false;
+        _growthTipsResult = result ?? 'Tidak ada data pertumbuhan bulan ini.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Growth tips error: $e');
+      setState(() { _growthTipsLoading = false; _growthTipsResult = 'Gagal memuat data. Coba lagi nanti.'; });
     }
-    final result = await GeminiService.instance.suggestGrowthTips(store.transaksi);
-    if (!mounted) return;
-    setState(() {
-      _growthTipsLoading = false;
-      _growthTipsResult = result ?? 'Tidak ada data pertumbuhan bulan ini.';
-    });
   }
 
   Future<void> _loadSupplier() async {
     setState(() => _supplierLoading = true);
-    final store = TransaksiUmkmStore.instance;
-    if (store.transaksi.isEmpty) {
-      setState(() { _supplierLoading = false; _supplierResult = _emptyDataMsg; });
-      return;
+    try {
+      final store = TransaksiUmkmStore.instance;
+      if (store.transaksi.isEmpty) {
+        setState(() { _supplierLoading = false; _supplierResult = _emptyDataMsg; });
+        return;
+      }
+      final result = await GeminiService.instance.recommendSuppliers(store.transaksi);
+      if (!mounted) return;
+      setState(() {
+        _supplierLoading = false;
+        _supplierResult = result ?? 'Tidak ada data biaya bahan untuk rekomendasi supplier.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Supplier error: $e');
+      setState(() { _supplierLoading = false; _supplierResult = 'Gagal memuat data. Coba lagi nanti.'; });
     }
-    final result = await GeminiService.instance.recommendSuppliers(store.transaksi);
-    if (!mounted) return;
-    setState(() {
-      _supplierLoading = false;
-      _supplierResult = result ?? 'Tidak ada data biaya bahan untuk rekomendasi supplier.';
-    });
   }
 
   @override

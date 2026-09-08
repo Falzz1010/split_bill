@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fairsplit/core/models/split_model.dart';
-import 'package:fairsplit/core/theme/app_colors.dart';
 import 'package:fairsplit/features/dashboard/screens/dashboard_screen.dart';
 import 'package:fairsplit/features/riwayat/screens/riwayat_screen.dart';
 import 'package:fairsplit/shared/widgets/neo_shimmer_skeleton.dart';

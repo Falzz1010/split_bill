@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/app_l10n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/state/transaksi_umkm_store.dart';
 import '../../../core/state/split_store.dart';
 import '../../../core/services/inventory_service.dart';
+import '../../../core/services/gemini_service.dart';
 import '../../../shared/widgets/neo_card.dart';
 
-/// Demo Mode — auto-play semua fitur untuk presentasi hackathon.
 class DemoModeScreen extends StatefulWidget {
-  const DemoModeScreen({super.key});
+  final void Function(int tabIndex)? onSelectTab;
+
+  const DemoModeScreen({super.key, this.onSelectTab});
 
   @override
   State<DemoModeScreen> createState() => _DemoModeScreenState();
@@ -27,48 +30,56 @@ class _DemoModeScreenState extends State<DemoModeScreen>
       title: 'Riwayat Transaksi',
       subtitle: '12 transaksi UMKM sudah dimuat',
       color: const Color(0xFF4CAF50),
+      tabIndex: 0,
     ),
     _DemoStep(
       icon: Icons.qr_code_scanner_rounded,
       title: 'OCR Scanner',
       subtitle: '3 mode: Offline ML Kit, AI Gemini, Auto-fallback',
       color: const Color(0xFF2196F3),
+      tabIndex: 2,
     ),
     _DemoStep(
       icon: Icons.category_rounded,
       title: 'Kategorisasi Otomatis',
       subtitle: 'Autocomplete dari transaksi sebelumnya',
       color: const Color(0xFF9C27B0),
+      tabIndex: 0,
     ),
     _DemoStep(
       icon: Icons.inventory_2_rounded,
       title: 'Inventaris',
       subtitle: '8 item, 3 stok rendah, 1 kritis',
       color: const Color(0xFFFF9800),
+      tabIndex: 4,
     ),
     _DemoStep(
       icon: Icons.show_chart_rounded,
       title: 'Sales Analytics',
       subtitle: 'SMA, EMA, Growth, Anomaly, Trend, ABC',
       color: const Color(0xFF00BCD4),
+      tabIndex: 1,
     ),
     _DemoStep(
       icon: Icons.auto_awesome_rounded,
       title: 'AI Insight',
       subtitle: '9 rekomendasi cerdas otomatis',
       color: const Color(0xFFE91E63),
+      tabIndex: 5,
     ),
     _DemoStep(
       icon: Icons.account_balance_wallet_rounded,
       title: 'Cash Flow Projection',
       subtitle: 'Prediksi 7 hari dengan confidence',
       color: const Color(0xFF795548),
+      tabIndex: 3,
     ),
     _DemoStep(
       icon: Icons.picture_as_pdf_rounded,
       title: 'PDF Export',
       subtitle: 'Laporan harian & semua transaksi',
       color: const Color(0xFFF44336),
+      tabIndex: 3,
     ),
   ];
 
@@ -84,7 +95,10 @@ class _DemoModeScreenState extends State<DemoModeScreen>
       curve: Curves.easeInOut,
     );
     _fadeController.forward();
-    _loadDemoData();
+    // Muat data demo setelah frame pertama — memanggil loadDemo() langsung
+    // di initState memicu notifyListeners() saat build (assertion
+    // 'setState() called during build').
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDemoData());
   }
 
   @override
@@ -94,9 +108,20 @@ class _DemoModeScreenState extends State<DemoModeScreen>
   }
 
   Future<void> _loadDemoData() async {
-    await TransaksiUmkmStore.instance.loadDemo();
-    await InventoryService.instance.loadDemo();
-    SplitStore.instance.loadDemo();
+    GeminiService.instance.demoMode = true;
+    try {
+      await TransaksiUmkmStore.instance.loadDemo();
+      await InventoryService.instance.loadDemo();
+      SplitStore.instance.loadDemo();
+    } catch (e) {
+      debugPrint('Demo data load error: $e');
+    }
+  }
+
+  void _navigateToStep(int index) {
+    final tabIndex = _steps[index].tabIndex;
+    widget.onSelectTab?.call(tabIndex);
+    if (mounted) Navigator.of(context).pop();
   }
 
   void _startDemo() {
@@ -119,8 +144,9 @@ class _DemoModeScreenState extends State<DemoModeScreen>
 
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && _isPlaying && !_isPaused) {
+        final nextStep = _currentStep;
         setState(() => _currentStep++);
-        _playNextStep();
+        _navigateToStep(nextStep);
       }
     });
   }
@@ -154,10 +180,15 @@ class _DemoModeScreenState extends State<DemoModeScreen>
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Row(
                 children: [
-                  Icon(Icons.play_circle_rounded, color: c.primary, size: 28),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Icon(Icons.arrow_back_rounded, color: c.onSurface, size: 24),
+                  ),
                   const SizedBox(width: 10),
+                  Icon(Icons.play_circle_rounded, color: c.primary, size: 28),
+                  const SizedBox(width: 8),
                   Text(
-                    'Demo Mode',
+                    tr('demo_mode'),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -228,7 +259,9 @@ class _DemoModeScreenState extends State<DemoModeScreen>
                   return AnimatedBuilder(
                     animation: _fadeAnimation,
                     builder: (context, child) {
-                      return Opacity(
+                      return GestureDetector(
+                        onTap: () => _navigateToStep(index),
+                        child: Opacity(
                         opacity: isActive ? _fadeAnimation.value : 1.0,
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 8),
@@ -291,6 +324,7 @@ class _DemoModeScreenState extends State<DemoModeScreen>
                             ),
                           ),
                         ),
+                      ),
                       );
                     },
                   );
@@ -393,11 +427,13 @@ class _DemoStep {
   final String title;
   final String subtitle;
   final Color color;
+  final int tabIndex;
 
   const _DemoStep({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
+    required this.tabIndex,
   });
 }

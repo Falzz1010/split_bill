@@ -192,24 +192,14 @@ Aplikasi menggunakan gaya desain **Soft Neo-Brutalism** yang khas:
 - Palet warna pastel cerah (Kuning, Teal, Orange, Lavender)
 - Sudut membulat (rounded corners 16-24px)
 
-```
-┌───────────────────────────────────────────────┐
-│  🏠 Dashboard    │  📷 Scanner    │  ✏️ Editor  │
-├───────────────────┼────────────────┼────────────┤
-│  Greeting +       │  Camera Frame  │  List Items │
-│  Search Bar       │  Scan Line     │  Qty +-     │
-│  Split Aktif      │  Controls      │  Tax Toggle │
-│  Featured Card    │  Gallery/Flash │  Members    │
-│  Charts           │                │  Assignment │
-├───────────────────┼────────────────┼────────────┤
-│  📊 Summary      │  📜 History    │  ⚙️ Settings│
-├───────────────────┼────────────────┼────────────┤
-│  Per-Person Card  │  Tab Filters   │  Currency   │
-│  Status Toggle    │  Search        │  Language   │
-│  Share WhatsApp   │  Transaction   │  Dark Mode  │
-│  Export PDF       │  Cards         │  Database   │
-└───────────────────┴────────────────┴────────────┘
-```
+| | | |
+|:---:|:---:|:---:|
+| ![Dashboard](screen.png) | ![Scanner](screen2.png) | ![Editor](screen3.png) |
+| Dashboard | OCR Scanner | Bill Editor |
+| ![Summary](screen4.png) | ![History](screen5.png) | ![Settings](screen6.png) |
+| Ringkasan | Riwayat | Pengaturan |
+| ![UMKM Dashboard](s14.png) | ![Inventory](s15.png) | ![Insight](s16.png) |
+| UMKM Dashboard | Inventaris | AI Insight |
 
 ---
 

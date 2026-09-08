@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fairsplit/shared/widgets/neo_paw_logo.dart';
 import 'package:fairsplit/core/theme/app_colors.dart';
-import 'package:fairsplit/core/theme/app_colors.dart';
 
 /// Merender widget logo asli ke file PNG, agar ikon launcher & splash native
 /// persis sama dengan logo di dalam aplikasi.

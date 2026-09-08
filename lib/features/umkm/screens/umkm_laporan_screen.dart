@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_l10n.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/models/transaksi_umkm.dart';
 import '../../../core/state/transaksi_umkm_store.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../shared/widgets/neo_card.dart';

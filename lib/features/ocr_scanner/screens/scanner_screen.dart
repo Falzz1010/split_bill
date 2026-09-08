@@ -782,16 +782,6 @@ Grand Total 150.000
                         ),
                       ),
                     ),
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      child: const Icon(Icons.tune_rounded, color: Colors.white),
-                    ),
                   ],
                 ),
               ],

@@ -40,6 +40,7 @@ class OcrAnnotatedScreen extends StatefulWidget {
 class _OcrAnnotatedScreenState extends State<OcrAnnotatedScreen> {
   late List<ReceiptItem> _items;
   late String _merchantName;
+  late TextEditingController _merchantController;
   ui.Image? _decodedImage;
   bool _imageDecoding = true;
   late List<_LabelData> _labels;
@@ -50,9 +51,16 @@ class _OcrAnnotatedScreenState extends State<OcrAnnotatedScreen> {
     super.initState();
     _items = List.of(widget.parsed.items);
     _merchantName = widget.parsed.merchantName;
+    _merchantController = TextEditingController(text: _merchantName);
     _labels = [];
     _decodeImage();
     _buildLabelsFromOcr();
+  }
+
+  @override
+  void dispose() {
+    _merchantController.dispose();
+    super.dispose();
   }
 
   Future<void> _decodeImage() async {
@@ -441,7 +449,7 @@ class _OcrAnnotatedScreenState extends State<OcrAnnotatedScreen> {
                     Text('Nama Toko', style: Theme.of(context).textTheme.labelLarge),
                     const SizedBox(height: 6),
                     TextField(
-                      controller: TextEditingController(text: _merchantName),
+                      controller: _merchantController,
                       onChanged: (v) => _merchantName = v,
                       decoration: InputDecoration(
                         hintText: 'Nama toko / merchant', filled: true, fillColor: Colors.white,

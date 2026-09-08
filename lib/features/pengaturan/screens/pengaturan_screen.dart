@@ -14,10 +14,10 @@ import '../../onboarding/screens/onboarding_screen.dart';
 import '../../umkm/screens/umkm_demo_screen.dart' as demo;
 
 class PengaturanScreen extends StatefulWidget {
-  /// Dipanggil saat pengguna memilih "Lihat Tutorial" di bagian Bantuan.
   final VoidCallback? onShowTutorial;
+  final void Function(int tabIndex)? onSelectTab;
 
-  const PengaturanScreen({super.key, this.onShowTutorial});
+  const PengaturanScreen({super.key, this.onShowTutorial, this.onSelectTab});
 
   @override
   State<PengaturanScreen> createState() => _PengaturanScreenState();
@@ -229,8 +229,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         child: Text(
                           SettingsService.instance.appMode == AppMode.umkm
-                              ? 'Mode Kasir: Dashboard omzet, laporan shift, PPN auto-on'
-                              : 'Mode Personal: Split bill teman/keluarga',
+                              ? tr('mode_kasir_desc')
+                              : tr('mode_personal_desc'),
                           style: TextStyle(fontSize: 11, color: context.palette.onSurfaceVariant),
                         ),
                       ),
@@ -818,7 +818,9 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const demo.DemoModeScreen(),
+                                  builder: (_) => demo.DemoModeScreen(
+                                    onSelectTab: widget.onSelectTab,
+                                  ),
                                 ),
                               );
                             },
@@ -841,7 +843,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Demo Mode',
+                                          tr('demo_mode'),
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
@@ -849,7 +851,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                         ),
                                         SizedBox(height: 2),
                                         Text(
-                                          'Auto-play semua fitur untuk presentasi',
+                                          tr('demo_mode_desc'),
                                           style: TextStyle(
                                             fontSize: 11,
                                             color: context.palette.onSurfaceVariant,

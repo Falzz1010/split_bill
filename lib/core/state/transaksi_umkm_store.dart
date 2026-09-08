@@ -209,14 +209,20 @@ class TransaksiUmkmStore extends ChangeNotifier {
   Future<void> load() async {
     _isLoading = true;
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('transaksi_umkm') ?? '[]';
     try {
-      final list = jsonDecode(raw) as List<dynamic>;
-      _transaksi = list
-          .map((e) => TransaksiUmkm.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } catch (_) {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('transaksi_umkm') ?? '[]';
+      try {
+        final list = jsonDecode(raw) as List<dynamic>;
+        _transaksi = list
+            .map((e) => TransaksiUmkm.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } catch (e) {
+        debugPrint('TransaksiUmkmStore.load: $e');
+        _transaksi = [];
+      }
+    } catch (e) {
+      debugPrint('TransaksiUmkmStore.load prefs: $e');
       _transaksi = [];
     }
     _isLoading = false;
